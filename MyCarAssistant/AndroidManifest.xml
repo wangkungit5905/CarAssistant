@@ -24,6 +24,7 @@
         </activity>
         <activity
             android:name="com.ssc.mycarassistant.ToFuelMgr"
+            android:configChanges="orientation"
             android:label="@string/title_activity_to_fuel_mgr" >
         </activity>
         <activity
@@ -41,6 +42,10 @@
         <activity
             android:name="com.ssc.mycarassistant.ManagerActivity"
             android:label="@string/title_activity_manager" >
+        </activity>
+        <activity
+            android:name="com.ssc.mycarassistant.ToFuelRecordEditor"
+            android:label="@string/title_activity_to_fuel_record_editor" >
         </activity>
     </application>
 

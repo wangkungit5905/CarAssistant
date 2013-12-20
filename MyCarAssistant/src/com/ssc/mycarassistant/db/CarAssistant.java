@@ -29,7 +29,10 @@ public final class CarAssistant {
 	      public static final String CONTENT_TYPE = "vnd.android.cursor.dir/com.ssc.provider.carassistant.tofuel";
 	      /** 访问所有加油记录的内容 uri, content://com.ssc.provider.carassistant/ToFuelRecords */
 	      public static final Uri CONTENT_URI = Uri.parse( "content://" + CarAssistant.AUTHORITY + "/" + ToFuelRecords.TABLE );
-
+	      /** 访问指定车辆的所有加油记录的内容uri */
+	      public static final Uri CONTENT_URI_CARS = Uri.parse( "content://" + CarAssistant.AUTHORITY + "/" + ToFuelRecords.TABLE + "/CARS/");
+	      /** 访问指定车辆的指定年份所有加油记录的内容uri */
+	      public static final Uri CONTENT_URI_CAR_YEARS = Uri.parse( "content://" + CarAssistant.AUTHORITY + "/" + ToFuelRecords.TABLE + "/CAR_YEARS/");
 	      public static final String DEFAULT_SORT_ORDER = ToFuelRecords.DATE /*+ " DESC"*/;	//默认以时间顺序返回加油记录结果
 	      
 	      public static final String TABLE = "ToFuelRecords";
@@ -43,7 +46,10 @@ public final class CarAssistant {
 	                                          "," + ToFuelRecords.MONEY + " " + ToFuelRecords.MONEY_TYPE + 
 	                                          "," + ToFuelRecords.AMOUNT + " " + ToFuelRecords.AMOUNT_TYPE + 
 	                                          "," + ToFuelRecords.PRICE + " " + ToFuelRecords.PRICE_TYPE +
+	                                          "," + ToFuelRecords.STATION + " " + ToFuelRecords.STATION_TYPE +
 	                                          ");";
+	      
+	      public static int FEILD_COUNT = 9;	//不包括id字段在内的字段数
 	}
 	
 	public static final class FuelClasses extends FuelClassColumns implements BaseColumns{
@@ -161,6 +167,8 @@ public final class CarAssistant {
 		static final String AMOUNT_TYPE 		= "REAL NOT NULL";
 		public static final String PRICE		= "price";				//单价
 		static final String PRICE_TYPE			= "REAL NOT NULL";
+		public static final String STATION		= "station";			//加油站
+		static final String STATION_TYPE		= "INTEGER";
 		static final String _ID_TYPE        = "INTEGER PRIMARY KEY AUTOINCREMENT";
 	}
 	

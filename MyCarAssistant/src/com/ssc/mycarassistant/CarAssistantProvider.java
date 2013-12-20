@@ -1,7 +1,9 @@
 package com.ssc.mycarassistant;
 
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.LinkedList;
+import java.util.List;
 
 import com.ssc.mycarassistant.db.CarAssistant;
 import com.ssc.mycarassistant.db.CarAssistant.Fuels;
@@ -11,6 +13,7 @@ import com.ssc.mycarassistant.db.CarAssistant.VehicleInfos;
 import com.ssc.mycarassistant.db.DbHelper;
 import com.ssc.mycarassistant.db.CarAssistant.FuelClasses;
 
+import android.R.integer;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.UriMatcher;
@@ -32,6 +35,8 @@ public class CarAssistantProvider extends ContentProvider {
 	private static final int STATION_ITEM = 8;
 	private static final int TOFUELS = 9;
 	private static final int TOFUEL_ITEM = 10;
+	private static final int TOFUEL_CARS = 11;	//针对某辆车的所有加油记录
+	private static final int TOFUEL_CARS_YEAR = 12;	//针对某辆车某年的所有加油记录
 	
 	private static final UriMatcher mUriMatcher;
 	private DbHelper mDbHelper;
@@ -48,6 +53,8 @@ public class CarAssistantProvider extends ContentProvider {
 		mUriMatcher.addURI(CarAssistant.AUTHORITY, ToFuelStations.TABLE+"/#", STATION_ITEM);
 		mUriMatcher.addURI(CarAssistant.AUTHORITY, ToFuelRecords.TABLE, TOFUELS);
 		mUriMatcher.addURI(CarAssistant.AUTHORITY, ToFuelRecords.TABLE+"/#", TOFUEL_ITEM);
+		mUriMatcher.addURI(CarAssistant.AUTHORITY, ToFuelRecords.TABLE+"/CARS/#", TOFUEL_CARS);
+		mUriMatcher.addURI(CarAssistant.AUTHORITY, ToFuelRecords.TABLE+"/CAR_YEARS/#/#", TOFUEL_CARS_YEAR);
 	}
 	
 	public CarAssistantProvider() {
@@ -88,7 +95,10 @@ public class CarAssistantProvider extends ContentProvider {
 		String innerSelection = null;
         String[] innerSelectionArgs = new String[]{};
         String sortorder = sortOrder;
-		
+        
+        List<String> pathSegments = uri.getPathSegments();
+        
+        boolean isToFuelRecs = false;
 		switch (mUriMatcher.match(uri)) {
 			case FUELCLASSES:
 				tableName = FuelClasses.TABLE;
@@ -102,7 +112,48 @@ public class CarAssistantProvider extends ContentProvider {
 				break;
 			case FUEL_ITEM:
 				tableName = Fuels.TABLE;
-				innerSelection = FuelClasses._ID + " = ? ";
+				innerSelection = Fuels._ID + " = ? ";
+				break;
+			case CARS:
+				tableName = VehicleInfos.TABLE;
+				break;
+			case CAR_ITEM:
+				tableName = VehicleInfos.TABLE;
+				innerSelection = VehicleInfos._ID + " = ? ";
+				break;
+			case STATIONS:
+				tableName = ToFuelStations.TABLE;
+				break;
+			case STATION_ITEM:
+				tableName = ToFuelStations.TABLE;
+				innerSelection = ToFuelStations._ID + " = ? ";
+				break;
+			case TOFUELS:
+				tableName = ToFuelRecords.TABLE;
+				break;
+			case TOFUEL_ITEM:
+				tableName = ToFuelRecords.TABLE;
+				innerSelection = ToFuelRecords._ID + " = ? ";
+				innerSelectionArgs = new String[]{pathSegments.get(1)};
+				break;
+			case TOFUEL_CARS:
+				isToFuelRecs = true;
+				tableName = ToFuelRecords.TABLE;
+				innerSelection = ToFuelRecords.VEHICLE + " = ? ";
+				innerSelectionArgs = new String[]{pathSegments.get(2)};
+				break;
+			case TOFUEL_CARS_YEAR:
+				isToFuelRecs = true;
+				tableName = ToFuelRecords.TABLE;
+				innerSelection = ToFuelRecords.VEHICLE + " = ? and (" + ToFuelRecords.DATE + " >= ? and " + ToFuelRecords.DATE + 
+						" <= ?)";
+				Calendar calendar = Calendar.getInstance();
+				int year = Integer.parseInt(pathSegments.get(3));
+				calendar.set(year, 1,1);
+				long st = calendar.getTime().getTime();
+				calendar.set(year,12,31,23,59);
+				long et = calendar.getTime().getTime();
+				innerSelectionArgs = new String[]{pathSegments.get(2),Long.toString(st),Long.toString(et)};
 				break;
 			default:
 				//throw new UnsupportedOperationException("Not yet implemented");
@@ -125,6 +176,15 @@ public class CarAssistantProvider extends ContentProvider {
         }
         selectionArgs = allArgs.toArray(innerSelectionArgs);
         
+        //确保加油记录的返回顺序以日期的倒序形式，即最近的加油记录处于最前
+        if(isToFuelRecs){
+        	if(sortorder == null)
+            	sortorder = ToFuelRecords.DATE + " desc";
+            else
+            	sortorder  = sortorder + "," + ToFuelRecords.DATE + " desc";
+        }        
+
+            
         // Make the query.
         SQLiteDatabase mDb = this.mDbHelper.getWritableDatabase();
         Cursor c = qb.query( mDb, projection, selection, selectionArgs, null, null, sortorder  );

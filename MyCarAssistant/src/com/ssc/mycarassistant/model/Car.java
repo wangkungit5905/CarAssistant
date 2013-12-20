@@ -1,5 +1,7 @@
 package com.ssc.mycarassistant.model;
 
+import android.R.integer;
+
 import com.ssc.mycarassistant.model.Fuel;
 
 public class Car {
@@ -13,10 +15,12 @@ public class Car {
 		maintenancePeriod=0;
 	}
 	
+	public int ID(){return id;}
 	public String number(){return mNumber;}
 	public Fuel usedFuel(){return mUsedFuel;}
 	public int boxVolume(){return mBoxVolume;}
 	public int totalScale(){return mTotalScale;}
+	public String toString(){return mNumber;}
 	
 	public int mileage(){return maintenanceMileage;}
 	public void setMileage(int mileage){maintenanceMileage = mileage;}

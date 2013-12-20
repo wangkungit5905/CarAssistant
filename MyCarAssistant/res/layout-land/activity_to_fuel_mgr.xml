@@ -8,7 +8,7 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context=".ManagerActivity" >
+    tools:context=".ToFuelMgr" >
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -17,34 +17,28 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/fule_class" />
-
-        <ListView
-            android:id="@+id/fuel_class_lv"
-            android:layout_width="match_parent"
-            android:layout_height="104dp" >
-
-        </ListView>
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" >
-
+            android:text="车牌" />
+        <Spinner
+            android:id="@+id/carNumbers"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
         <TextView
-            android:id="@+id/carNumber"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/used_fuel" />
-
-        <ListView
-            android:id="@+id/used_fuel_lv"
-            android:layout_width="match_parent"
-            android:layout_height="134dp" >
-
-        </ListView>
+            android:text="年份" />
+        <Spinner
+            android:id="@+id/toFuel_years"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
 
     </LinearLayout>
+    
+    
+
+    <ListView
+        android:id="@+id/toFuelRecords"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+    </ListView>
 
 </LinearLayout>

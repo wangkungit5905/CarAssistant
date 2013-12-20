@@ -1,0 +1,13 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <item
+        android:id="@+id/tf_mi_view"
+        android:title="@string/menu_view"/>
+    <item android:id="@+id/tf_mi_edit" 
+        android:title="@string/menu_edit"/>
+    <item android:id="@+id/tf_mi_delete" 
+        android:title="@string/menu_delete"/>
+    <item android:id="@+id/tf_mi_new" 
+        android:title="@string/menu_new"/>
+
+</menu>

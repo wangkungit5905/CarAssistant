@@ -1,5 +1,8 @@
 package com.ssc.mycarassistant.db;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 
 import com.ssc.mycarassistant.COODINATIONTYPE;
@@ -41,12 +44,44 @@ public class DbHelper extends SQLiteOpenHelper {
 		db.execSQL(ToFuelStations.CREATE_STATEMENT);
 		db.execSQL(ToFuelRecords.CREATE_STATEMENT);
 		
+		//初始化油料种类表
 		db.execSQL("insert into FuelClasses(name) values('汽油');");
 		db.execSQL("insert into FuelClasses(name) values('柴油');");
 		
+		//初始化油料表
 		db.execSQL("insert into Fuels(FuelClass,gradeName) values(1,'93#');");
 		db.execSQL("insert into Fuels(FuelClass,gradeName) values(1,'97#');");
 		db.execSQL("insert into Fuels(FuelClass,gradeName) values(2,'0#');");
+		
+		//添加加油站记录
+		db.execSQL("insert into ToFuelStations(name,address,latitude,longitude,coordinateType) values('宁公运孔浦加油站','宁波市环城北路东段161号',29.90714,121.59104,'GPS')");
+		db.execSQL("insert into ToFuelStations(name,address,latitude,longitude,coordinateType) values('钟公庙加油站','宁波市鄞州区四明西路',0,0,'GPS')");
+		
+		//添加车辆记录
+		db.execSQL("insert into VehicleInfos(number,totalScale,boxVolume,useFuel) values('浙B-138H6',20,60,1)");
+		db.execSQL("insert into VehicleInfos(number,totalScale,boxVolume,useFuel) values('浙B-00000',30,60,2)");
+		
+		
+		//添加一条加油记录
+		//2012年，我的车加油
+		Calendar calendar = Calendar.getInstance();
+		calendar.set(2012,11,5);
+		db.execSQL("insert into ToFuelRecords(vehicle,date,fuel,mileage,fuelDial,money,fuelAmount,price,station) values(1," + 
+				calendar.getTime().getTime() + ",1,7,1,100,13.51,7.4,1)");
+		
+		calendar.set(2013,1,10);
+		db.execSQL("insert into ToFuelRecords(vehicle,date,fuel,mileage,fuelDial,money,fuelAmount,price,station) values(1," + 
+				calendar.getTime().getTime() + ",1,230,4,200,27.03,7.4,2)");
+		
+		calendar.set(2013,2,9);
+		db.execSQL("insert into ToFuelRecords(vehicle,date,fuel,mileage,fuelDial,money,fuelAmount,price,station) values(1," + 
+				calendar.getTime().getTime() + ",1,650,5,300,41.4,7.25,1)");
+		
+		//测试车辆的加油记录
+		calendar.set(2011,10,18);
+		db.execSQL("insert into ToFuelRecords(vehicle,date,fuel,mileage,fuelDial,money,fuelAmount,price,station) values(2," + 
+				calendar.getTime().getTime() + ",2,2000,2,300,37.6,7.98,2)");
+		
 		
 		//long id = initFuelTable();
 		//initToFuelRecord(id);

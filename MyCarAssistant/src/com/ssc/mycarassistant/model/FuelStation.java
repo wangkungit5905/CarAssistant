@@ -11,6 +11,10 @@ public class FuelStation {
 		mLat = 0; mLon = 0;
 		mCoType = COODINATIONTYPE.CT_GPS;
 	}
+	
+	@Override
+	public String toString(){return mName;}
+	public int ID(){return id;}
 	public String name(){return mName;}
 	public void setName(String name){mName = name;}
 	public String address(){return mAddress;}

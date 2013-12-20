@@ -27,10 +27,8 @@ public class MainActivity extends LauncherActivity {
 	static int QUEST_CODE_MAGAGER = 1;
 	private Class<?>[] clazzs;
 	
-	HashMap<Integer,String> mFuelClasses;  //燃料种类
-	HashMap<Integer,Fuel> mFuels;			//燃料
+	
 	HashMap<Integer,Car> mCars;			//车辆
-	HashMap<Integer,FuelStation> mStations;//加油站
 	
 	Cursor mCursor;
 	
@@ -85,10 +83,10 @@ public class MainActivity extends LauncherActivity {
     }
     
     private boolean init(){
-    	if(!readFuelClasses())
-    		return false;
-    	if(!readFuels())
-    		return false;
+//    	if(!readFuelClasses())
+//    		return false;
+//    	if(!readFuels())
+//    		return false;
 //    	if(!readCars())
 //    		return false;
 //    	if(!readStations())
@@ -96,151 +94,13 @@ public class MainActivity extends LauncherActivity {
     	return true;     
     }
     
-    //读取燃料种类 
-    private boolean readFuelClasses(){
-    	ContentResolver resolver = getContentResolver();  
-    	try
-        {        	
-        	mCursor = resolver.query(FuelClasses.CONTENT_URI, null, null, null, null);
-        	if(mCursor == null){
-        		Toast.makeText(MainActivity.this,getText(R.string.title_error),Toast.LENGTH_SHORT).show();
-        		return false;
-        	}
-        	else if(mCursor.getCount() == 0){
-        		Toast.makeText(MainActivity.this,getText(R.string.error_info_null_fuelclass),Toast.LENGTH_SHORT).show();
-        		return false;
-        	}
-        	else{
-        		if(mFuelClasses == null)
-        			mFuelClasses = new HashMap<Integer,String>();
-        		else
-        			mFuelClasses.clear();
-        		while(mCursor.moveToNext()){
-        			int id = mCursor.getInt(0);
-        			String fuelName = mCursor.getString(1);
-        			mFuelClasses.put(id, fuelName);
-        		}
-        	}        	
-        }
-        finally
-        {
-           if (mCursor != null)
-              mCursor.close();           
-        }
-        return true;
-    }
+   
     
-    private boolean readFuels(){
-    	ContentResolver resolver = getContentResolver();  
-    	try
-        { 
-    		mCursor = resolver.query(Fuels.CONTENT_URI, null, null, null, null);
-        	if(mCursor == null){
-        		Toast.makeText(MainActivity.this,getText(R.string.title_error),Toast.LENGTH_SHORT).show();
-        		return false;
-        	}
-        	else if(mCursor.getCount() == 0){
-        		Toast.makeText(MainActivity.this,getText(R.string.error_info_null_fuel),Toast.LENGTH_SHORT).show();
-        		return false;
-        	}
-        	else{
-        		if(mFuels == null)
-        			mFuels = new HashMap<Integer,Fuel>();
-        		else
-        			mFuels.clear();
-        		while(mCursor.moveToNext()){
-        			int id = mCursor.getInt(0);
-        			int fcId = mCursor.getInt(1);
-        			String grade = mCursor.getString(2);
-        			Fuel fuel = new Fuel(id,fcId,mFuelClasses.get(fcId),grade);
-        			mFuels.put(id, fuel);
-        		}
-        	}
-        }
-    	finally
-        {
-           if (mCursor != null)
-              mCursor.close();           
-        }
-    	return true;
-    }
     
-    private boolean readCars(){
-    	ContentResolver resolver = getContentResolver();  
-    	try{
-    		mCursor = resolver.query(VehicleInfos.CONTENT_URI, null, null, null, null);
-        	if(mCursor == null){
-        		Toast.makeText(MainActivity.this,getText(R.string.title_error),Toast.LENGTH_SHORT).show();
-        		return false;
-        	}
-        	else if(mCursor.getCount() == 0){
-        		Toast.makeText(MainActivity.this,getText(R.string.error_info_null_vehicle),Toast.LENGTH_SHORT).show();
-        		return true;
-        	}
-        	else{
-        		if(mCars == null)
-        			mCars = new HashMap<Integer,Car>();
-        		else
-        			mCars.clear();
-        		while(mCursor.moveToNext()){
-        			if(mCars == null)
-        				mCars = new HashMap<Integer,Car>();
-        			else
-        				mCars.clear();
-        			int id = mCursor.getInt(0);
-        			String number = mCursor.getString(mCursor.getColumnIndex(VehicleInfoColumns.NUMBER));
-        			int fuelId = mCursor.getInt(mCursor.getColumnIndex(VehicleInfoColumns.USE_FUEL));
-        			int boxVolume = mCursor.getInt(mCursor.getColumnIndex(VehicleInfoColumns.BOX_VOLUME));
-        			int mileage = mCursor.getInt(mCursor.getColumnIndex(VehicleInfoColumns.TOTAL_SCALE));
-        			Car car = new Car(id,number,mFuels.get(fuelId),boxVolume,mileage);
-        			mCars.put(id, car);
-        		}
-        	}
-    	}
-    	finally
-        {
-           if (mCursor != null)
-              mCursor.close();           
-        }
-    	return true;
-    }
     
-    private boolean readStations(){
-    	ContentResolver resolver = getContentResolver();  
-    	try{
-    		mCursor = resolver.query(ToFuelStations.CONTENT_URI, null, null, null, null);
-        	if(mCursor == null){
-        		Toast.makeText(MainActivity.this,getText(R.string.title_error),Toast.LENGTH_SHORT).show();
-        		return false;
-        	}
-        	else if(mCursor.getCount() == 0)        		
-        		return true;        	
-        	else{
-        		if(mStations == null)
-        			mStations = new HashMap<Integer,FuelStation>();
-        		else
-        			mStations.clear();
-        		while(mCursor.moveToNext()){
-        			int id = mCursor.getInt(0);
-        			String name = mCursor.getString(mCursor.getColumnIndex(ToFuelStationColumns.NAME));
-        			String addr = mCursor.getString(mCursor.getColumnIndex(ToFuelStationColumns.ADDRESS));
-        			double lat = mCursor.getDouble(mCursor.getColumnIndex(ToFuelStationColumns.LAT));
-        			double lon = mCursor.getDouble(mCursor.getColumnIndex(ToFuelStationColumns.LON));
-        			//COODINATIONTYPE type;  //对于坐标类型，要看保存到数据库的实际内容来定
-        			FuelStation station = new FuelStation(id,name,addr);
-        			station.setCoodination(lat, lon);
-        			station.setCoodinationType(COODINATIONTYPE.CT_GPS);
-        			mStations.put(id, station);
-        		}        			
-        	}
-    	}
-    	finally
-        {
-           if (mCursor != null)
-              mCursor.close();           
-        }
-    	return true;
-    }
+    
+    
+    
     
 //    @Override 
 //    protected void onActivityResult(int requestCode, int resultCode, Intent data){
