@@ -57,36 +57,79 @@ public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnD
 	Button mBtnOk,mBtnCancel;
 	
 	public class FuelTypeListener implements OnClickListener{
-		Object[] fuels;
-		Activity parent;
+		Fuel[]  fuels;
+		int pos;		//找到当前加油记录所对应的燃料的索引
+		ArrayAdapter<Fuel> adapter;
 		
-		public FuelTypeListener(Activity parent){
-			this.parent=parent;
-			fuels = ToFuelMgr.mFuels.values().toArray();
+		public FuelTypeListener(){
+			//this.parent=parent;			
+			pos = -1;
+			Object[] items = ToFuelMgr.mFuels.values().toArray();
+			fuels = new Fuel[items.length];				
+			for(int i = 0; i < items.length; ++i)
+				fuels[i] = (Fuel)items[i];
+			adapter = new ArrayAdapter<Fuel>(ToFuelRecordEditor.this, android.R.layout.select_dialog_singlechoice,fuels);
 		}
 		
 		@Override
-		public void onClick(View v) {	
-			CharSequence[] items = {"手机相册", "手机拍照", "清除照片"};
-			String[] names = new String[fuels.length];
-			for(int i = 0; i < fuels.length; ++i)
-				names[i] = fuels[i].toString();
-			ArrayAdapter<Object> adapter = new ArrayAdapter<Object>(parent, android.R.layout.select_dialog_singlechoice,names);
-			AlertDialog.Builder builder = new AlertDialog.Builder(parent)
-			.setTitle("燃料选择")
-			//.setMessage("请选择所加注的燃料类型")
-			.setSingleChoiceItems(adapter, 0, new DialogInterface.OnClickListener() {
-				
+		public void onClick(View v) {						
+			for(int i = 0; i < fuels.length; ++i){
+				if(fuels[i].ID() == mFuelId){
+					pos = i;  
+					break;
+				}
+			}		
+			AlertDialog.Builder builder = new AlertDialog.Builder(ToFuelRecordEditor.this)
+			.setTitle("请选择加注的燃料")
+			.setSingleChoiceItems(adapter, pos, new DialogInterface.OnClickListener() {				
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					// TODO Auto-generated method stub
-					
+					if(which != -1 && which != pos){
+						mFuelId = fuels[which].ID();
+						mFuelView.setText(fuels[which].toString());
+					}
+					dialog.dismiss();
 				}
-			})
-			.setPositiveButton("确定", null);
-			builder.create().show();	
-			
-			
+			});
+			builder.create().show();
+		}
+	}
+	
+	public class StationListener implements OnClickListener{
+		FuelStation[] stations;
+		int pos;
+		ArrayAdapter<FuelStation> adapter;
+		
+		public StationListener(){
+			pos = -1;
+			Object[] items = ToFuelMgr.mStations.values().toArray();
+			stations = new FuelStation[items.length];
+			for(int i = 0; i < items.length; ++i)
+				stations[i] = (FuelStation)items[i]; 
+			adapter = new ArrayAdapter<FuelStation>(ToFuelRecordEditor.this, android.R.layout.select_dialog_singlechoice,stations);
+		}
+		
+		@Override
+		public void onClick(View v) {
+			for(int i = 0; i < stations.length; ++i){
+				if(stations[i].ID() == mStationId){
+					pos = i;
+					break;
+				}
+			}
+			AlertDialog.Builder builder = new AlertDialog.Builder(ToFuelRecordEditor.this)
+			.setTitle("请选择加注的燃料")
+			.setSingleChoiceItems(adapter, pos, new DialogInterface.OnClickListener() {				
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					if(which != -1 && which != pos){
+						mStationId = stations[which].ID();
+						mStationView.setText(stations[which].toString());
+					}
+					dialog.dismiss();
+				}
+			});
+			builder.create().show();
 		}
 		
 	}
@@ -127,28 +170,8 @@ public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnD
 							dlg.show();
 						}
 					});
-			mFuelView.setOnClickListener(new FuelTypeListener(this));
-			
-//			mFuelView.setOnClickListener(
-//					new OnClickListener() {		
-//						Fuel[] fuels = (Fuel[])ToFuelMgr.mFuels.values().toArray();
-//						int size = fuels.length;
-//						//剔除与当前车辆不符的燃料类型，比如汽油车只保留汽油类型的燃料选项...
-//						String[] fuesNames = new String[size];
-//						//for(int i = 0; i < size; ++i)
-//							fuesNames[i] = fuels[i].toString();
-//						AlertDialog.Builder builder = new AlertDialog.Builder(ToFuelRecordEditor.this);
-//						builder.setTitle("列表选择框");
-//				    	builder.setMessage("请选择你喜欢的运动");
-//				    	builder.setSingleChoiceItems(items, -1, new DialogClickListener("hhah"));
-//						@Override
-//						public void onClick(View v) {
-//							
-//							int i = 0;
-//						}
-//					});
-			
-	        
+			mFuelView.setOnClickListener(new FuelTypeListener());		
+			mStationView.setOnClickListener(new StationListener());		
 	        mBtnOk.setOnClickListener(
 	        		new OnClickListener() {						
 						@Override
@@ -158,7 +181,6 @@ public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnD
 							finish();
 						}
 					});
-	        
 	        mBtnCancel.setOnClickListener(
 	        		new OnClickListener() {						
 						@Override
@@ -232,6 +254,7 @@ public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnD
 	        mDialEdit.setText(Float.toString(mFuelDial));
 	        mPriceEdit.setText(Float.toString(mPrice));
 	        mFuelView.setText(ToFuelMgr.mFuels.get(mFuelId).toString());
+	        mStationView.setText(ToFuelMgr.mStations.get(mStationId).toString());
 		//}
 		//else {
 //			TextView tv = (TextView)findViewById(R.id.tf_view_date);			

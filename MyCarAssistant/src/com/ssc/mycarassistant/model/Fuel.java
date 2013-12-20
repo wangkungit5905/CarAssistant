@@ -9,6 +9,7 @@ public class Fuel {
 		mGrade = grade;
 	}
 	
+	public int ID(){return id;}
 	public String toString(){
 		return mFuelName + "（" + mGrade + "）";
 	}
@@ -16,5 +17,5 @@ public class Fuel {
 	
 	private int mFuelClsId;				//燃料种类id
 	private String mGrade,mFuelName;		//燃料标号和燃料名
-	private long id;
+	private int id;
 }
