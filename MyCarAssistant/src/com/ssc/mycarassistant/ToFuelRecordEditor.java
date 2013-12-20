@@ -118,7 +118,7 @@ public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnD
 				}
 			}
 			AlertDialog.Builder builder = new AlertDialog.Builder(ToFuelRecordEditor.this)
-			.setTitle("请选择加注的燃料")
+			.setTitle("请选择加油站")
 			.setSingleChoiceItems(adapter, pos, new DialogInterface.OnClickListener() {				
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
