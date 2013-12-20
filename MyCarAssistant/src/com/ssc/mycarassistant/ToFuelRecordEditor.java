@@ -33,6 +33,8 @@ import android.widget.Toast;
 
 public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnDateSetListener {
 	
+	//测试git 代码更新到远程仓库是否正确
+	
 	//public static final String TF_KEY_ROWID			= "rowId";
 	public static final String TF_KEY_DATE 			= "date";
 	public static final String TF_KEY_MONEY 		= "money";
