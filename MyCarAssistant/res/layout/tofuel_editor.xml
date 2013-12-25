@@ -38,29 +38,43 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:ems="10"
-            android:inputType="number" >
-
+            android:inputType="numberDecimal" 
+            android:nextFocusRight="@+id/tf_editor_price">    
             <requestFocus />
         </EditText>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/tf_title_mileage" />
+            android:text="@string/tf_title_price" />
 
         <EditText
-            android:id="@+id/tf_editor_mileage"
+            android:id="@id/tf_editor_price"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:ems="10"
-            android:inputType="number" />      
-
+            android:inputType="numberDecimal" 
+            android:nextFocusDown="@+id/tf_editor_mileage"/>
     </LinearLayout>
     
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content" >
+        
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/tf_title_mileage" />
+
+        <EditText
+            android:id="@id/tf_editor_mileage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ems="10"
+            android:inputType="number"
+            android:nextFocusRight="@+id/tf_editor_fuelDial" />
 
          <TextView
             android:layout_width="wrap_content"
@@ -68,25 +82,14 @@
             android:text="@string/tf_title_fuelDial" />
 
         <EditText
-            android:id="@+id/tf_editor_fuelDial"
+            android:id="@id/tf_editor_fuelDial"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"          
             android:ems="10"
-            android:inputType="number" />
+            android:inputType="numberDecimal" />
         
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/tf_title_fuelAmount" />
-
-        <EditText
-            android:id="@+id/tf_editor_fuelAmount"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"          
-            android:ems="10"
-            android:inputType="number" />
+        
 	</LinearLayout>
 
     <LinearLayout
@@ -96,14 +99,14 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/tf_title_price" />
+            android:text="@string/tf_title_fuelAmount" />
 
         <EditText
-            android:id="@+id/tf_editor_price"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" 
+            android:id="@+id/tf_editor_fuelAmount"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
             android:ems="10"
-            android:inputType="number" />        
+            android:inputType="none" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -114,7 +117,7 @@
             android:id="@+id/tf_editor_fuel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="3" />
+            android:layout_weight="1" />
 
     </LinearLayout>
 

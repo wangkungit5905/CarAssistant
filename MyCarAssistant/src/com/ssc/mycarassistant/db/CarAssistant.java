@@ -28,7 +28,7 @@ public final class CarAssistant {
 	      /** 访问所有加油记录的内容的MIME */
 	      public static final String CONTENT_TYPE = "vnd.android.cursor.dir/com.ssc.provider.carassistant.tofuel";
 	      /** 访问所有加油记录的内容 uri, content://com.ssc.provider.carassistant/ToFuelRecords */
-	      public static final Uri CONTENT_URI = Uri.parse( "content://" + CarAssistant.AUTHORITY + "/" + ToFuelRecords.TABLE );
+	      public static final Uri CONTENT_URI = Uri.parse( "content://" + CarAssistant.AUTHORITY + "/" + ToFuelRecords.TABLE + "/");
 	      /** 访问指定车辆的所有加油记录的内容uri */
 	      public static final Uri CONTENT_URI_CARS = Uri.parse( "content://" + CarAssistant.AUTHORITY + "/" + ToFuelRecords.TABLE + "/CARS/");
 	      /** 访问指定车辆的指定年份所有加油记录的内容uri */

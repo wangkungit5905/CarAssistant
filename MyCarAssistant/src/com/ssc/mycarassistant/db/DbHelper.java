@@ -17,10 +17,13 @@ import com.ssc.mycarassistant.db.CarAssistant.ToFuelStations;
 import com.ssc.mycarassistant.db.CarAssistant.VehicleInfoColumns;
 import com.ssc.mycarassistant.db.CarAssistant.VehicleInfos;
 
+import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.net.Uri;
 import android.util.Log;
 
 public class DbHelper extends SQLiteOpenHelper {
@@ -91,6 +94,48 @@ public class DbHelper extends SQLiteOpenHelper {
 	public void onUpgrade(SQLiteDatabase db, int current, int targetVersion) {
 		// TODO Auto-generated method stub
 
+	}
+	
+	/** 更新单条加油记录 */
+	public int updateToFuelRecord(int id, ContentValues values){
+		String whereclause = ToFuelRecords._ID + " = " + id;
+		SQLiteDatabase mDb = getWritableDatabase();
+	    int updates = mDb.update(ToFuelRecords.TABLE, values, whereclause, null);
+	    
+	    //要使数据的变动及时通知到当前关联的显示组件，可能通知的Uri必须与当初读取时的Uri相同或包容（即两个Uri的前置路径相同）
+	    ContentResolver resolver = this.mContext.getContentResolver();
+	    Uri notifyUri = ToFuelRecords.CONTENT_URI;
+	    //Uri notifyUri = ContentUris.withAppendedId(ToFuelRecords.CONTENT_URI, id);
+	    resolver.notifyChange(notifyUri, null);  //要通知到内容观察者，这个观察着如何实现呢？
+	    
+	    //这里产用通知Uri与读取的Uri相同，也可以在列表视图中的实现实时的更新
+	    //String uriStr = ToFuelRecords.CONTENT_URI_CAR_YEARS.toString();
+		//uriStr = uriStr + "/" + Integer.toString(1) + "/" + Integer.toString(2013);
+		//Uri uri = Uri.parse(uriStr);
+	    //resolver.notifyChange(uri, null);
+	    
+	    return updates;
+	}
+	
+	/** 插入一条新的加油记录 */
+	public long insertToFuelRecord(ContentValues values){
+		SQLiteDatabase db = getWritableDatabase();
+		long id = db.insert(ToFuelRecords.TABLE, null, values);
+		ContentResolver resolver = this.mContext.getContentResolver();
+	    Uri notifyUri = ToFuelRecords.CONTENT_URI;
+	    resolver.notifyChange(notifyUri, null);  
+		return id;
+	}
+	
+	/** 删除一条加油记录 */
+	public int deleteToFuelRecord(long id){
+		String select = ToFuelRecords._ID + " = " + id;
+		SQLiteDatabase db = getWritableDatabase();
+		int affected = db.delete(ToFuelRecords.TABLE, select, null);
+		ContentResolver resolver = this.mContext.getContentResolver();
+	    Uri notifyUri = ToFuelRecords.CONTENT_URI;
+	    resolver.notifyChange(notifyUri, null);  
+		return affected;
 	}
 	
 	/** 初始化油料表（包括油料种类及其标号） */

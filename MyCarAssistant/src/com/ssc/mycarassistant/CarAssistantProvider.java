@@ -15,6 +15,7 @@ import com.ssc.mycarassistant.db.CarAssistant.FuelClasses;
 
 import android.R.integer;
 import android.content.ContentProvider;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
@@ -34,9 +35,9 @@ public class CarAssistantProvider extends ContentProvider {
 	private static final int STATIONS = 7;
 	private static final int STATION_ITEM = 8;
 	private static final int TOFUELS = 9;
-	private static final int TOFUEL_ITEM = 10;
-	private static final int TOFUEL_CARS = 11;	//针对某辆车的所有加油记录
-	private static final int TOFUEL_CARS_YEAR = 12;	//针对某辆车某年的所有加油记录
+	private static final int TOFUEL_ITEM = 10;			//单条加油记录
+	private static final int TOFUEL_CARS = 11;			//针对某辆车的所有加油记录
+	private static final int TOFUEL_CARS_YEAR = 12;		//针对某辆车某年的所有加油记录
 	
 	private static final UriMatcher mUriMatcher;
 	private DbHelper mDbHelper;
@@ -62,8 +63,18 @@ public class CarAssistantProvider extends ContentProvider {
 
 	@Override
 	public int delete(Uri uri, String selection, String[] selectionArgs) {
-		// Implement this to handle requests to delete one or more rows.
-		throw new UnsupportedOperationException("Not yet implemented");
+		int affected = 0;
+		int match = mUriMatcher.match(uri);
+		long id = ContentUris.parseId(uri);
+		switch (match) {
+		case TOFUEL_ITEM:
+			affected = mDbHelper.deleteToFuelRecord(id);
+			break;
+
+		default:
+			break;
+		}
+		return affected;
 	}
 
 	@Override
@@ -75,8 +86,27 @@ public class CarAssistantProvider extends ContentProvider {
 
 	@Override
 	public Uri insert(Uri uri, ContentValues values) {
-		// TODO: Implement this to handle requests to insert a new row.
-		throw new UnsupportedOperationException("Not yet implemented");
+		Uri insertedUri = null;
+		long id;
+//		long date;
+//		int fuelId,stationId;
+//		float money,mileage,price,amount,dial;
+		int match = mUriMatcher.match(uri);
+		switch (match) {
+		case TOFUELS:			
+			//if(!values.containsKey(ToFuelRecords.DATE)){
+			//	date = Calendar.getInstance().getTimeInMillis();
+			//}
+			//其他字段的值是否存在的检测忽略
+			id = mDbHelper.insertToFuelRecord(values);
+			insertedUri = ContentUris.withAppendedId(uri, id);			
+			break;
+
+		default:
+			break;
+		}
+		return insertedUri;
+		
 	}
 
 	@Override
@@ -193,9 +223,20 @@ public class CarAssistantProvider extends ContentProvider {
 	}
 
 	@Override
-	public int update(Uri uri, ContentValues values, String selection,
-			String[] selectionArgs) {
-		// TODO: Implement this to handle requests to update one or more rows.
-		throw new UnsupportedOperationException("Not yet implemented");
+	public int update(Uri uri, ContentValues values, String selection,String[] selectionArgs){
+		int match = CarAssistantProvider.mUriMatcher.match( uri );
+		int id;
+		int updates = 0;
+		
+		switch (match) {
+		case TOFUEL_ITEM:
+			id = (int)ContentUris.parseId(uri);
+			updates = mDbHelper.updateToFuelRecord(id, values);
+			break;
+		default:
+			break;
+		}
+		
+		return updates;
 	}
 }
