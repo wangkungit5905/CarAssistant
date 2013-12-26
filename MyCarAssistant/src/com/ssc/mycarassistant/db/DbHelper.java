@@ -138,6 +138,51 @@ public class DbHelper extends SQLiteOpenHelper {
 		return affected;
 	}
 	
+	/** 更新加油站记录 */
+	public int updateStation(int id, ContentValues values){
+		String whereclause = ToFuelStations._ID + " = " + id;
+		SQLiteDatabase mDb = getWritableDatabase();
+	    int updates = mDb.update(ToFuelStations.TABLE, values, whereclause, null);
+	    //如何使加油记录管理Activity知道此更新呢？
+	    //ContentResolver resolver = this.mContext.getContentResolver();
+	    //Uri notifyUri = ToFuelStations.CONTENT_URI;
+	    //resolver.notifyChange(notifyUri, null);
+		return updates;
+	}
+	
+	/** 插入加油站记录 */
+	public long insertStation(ContentValues values){
+		SQLiteDatabase db = getWritableDatabase();
+		long id = db.insert(ToFuelStations.TABLE, null, values);
+		//ContentResolver resolver = this.mContext.getContentResolver();
+	    //Uri notifyUri = ToFuelStations.CONTENT_URI;
+	    //resolver.notifyChange(notifyUri, null);  
+		return id;
+	}
+	
+	/** 删除加油站记录 */
+	public int deleteStation(long id){
+		String select = ToFuelStations._ID + " = " + id;
+		SQLiteDatabase db = getWritableDatabase();
+		int affected = db.delete(ToFuelStations.TABLE, select, null);
+		//ContentResolver resolver = this.mContext.getContentResolver();
+	    //Uri notifyUri = ToFuelRecords.CONTENT_URI;
+	    //resolver.notifyChange(notifyUri, null);  
+		return affected;
+	}
+	/** 更新燃料记录 */
+	
+	/** 插入燃料记录 */
+	
+	/** 删除燃料记录 */
+	
+	/** 更新车辆记录 */
+	
+	/** 插入车辆记录 */
+	
+	/** 删除车辆记录 */
+	
+	
 	/** 初始化油料表（包括油料种类及其标号） */
 	private long initFuelTable(){
 		Log.d(TAG, "init fuel table!");

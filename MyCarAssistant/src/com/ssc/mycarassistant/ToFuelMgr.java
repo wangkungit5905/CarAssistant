@@ -9,6 +9,7 @@ import java.text.SimpleDateFormat;
 
 import javax.crypto.NullCipher;
 
+import com.ssc.mycarassistant.db.CarAssistant;
 import com.ssc.mycarassistant.db.CarAssistant.FuelClasses;
 import com.ssc.mycarassistant.db.CarAssistant.Fuels;
 import com.ssc.mycarassistant.db.CarAssistant.ToFuelRecordColumns;
@@ -24,6 +25,8 @@ import com.ssc.mycarassistant.model.ToFuelRecord;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.R.integer;
 import android.app.Activity;
 import android.app.DialogFragment;
@@ -33,7 +36,9 @@ import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
+import android.content.UriMatcher;
 import android.content.res.Configuration;
+import android.database.ContentObserver;
 import android.database.Cursor;
 import android.app.LoaderManager;
 import android.support.v4.widget.SimpleCursorAdapter;
@@ -94,6 +99,9 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 	public static final int REQUEST_CODE_EDIT = 1;		//请求编辑操作
 	public static final int REQUEST_CODE_NEW  = 2;		//请求新增操作
 	
+	public static final int MSG_STATION_CHANGED = 1;	//
+	
+	
 	public static HashMap<Integer,String> mFuelClasses;  //燃料种类
 	public static HashMap<Integer,Fuel> mFuels;			//燃料
 	public static HashMap<Integer,FuelStation> mStations;//加油站
@@ -114,6 +122,91 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 	
 	//ToFuelRecordsAdapter adapterRec;
 	SimpleCursorAdapter adapterRec;
+	
+	//其实更新机制可以有两种实现方式
+	//第一种：利用内容观察者实现，但可能不能实时在加油记录的表格视图上显示，因为加油记录是直接查询加油记录表，没有关联加油站表和燃油表等
+	//第二种：使用一个连接查询将多个表字段合成一个加油记录集。但这样做，可能提高查询语言的复杂性，并且内部映射表得不到更新
+	
+	/**
+	 * 这个类用来监视比如加油站、燃料、车辆的变更
+	 * @author wangkun
+	 *
+	 */
+	private class MyContentObserver extends ContentObserver{
+		
+		private final String TAG_STATION = "StationObserver";  
+		private final String TAG_FUEL		= "FuelObserver";
+		
+		private static final int STATION_APPEND 	= 1;//添加了加油站
+		private static final int STATION_ITEM 		= 2;//加油站的属性发生了改变
+		
+		//private Handler mHandler ;
+		UriMatcher matcher;
+		
+		public MyContentObserver(Handler handler){
+			super(handler);
+			mHandler = handler;
+			matcher = new UriMatcher(UriMatcher.NO_MATCH);
+			matcher.addURI(CarAssistant.AUTHORITY, ToFuelStations.TABLE, STATION_APPEND);
+			matcher.addURI(CarAssistant.AUTHORITY, ToFuelStations.TABLE+"/#", STATION_ITEM);
+		}
+		
+		@Override  
+	    public void onChange(boolean selfChange){
+			onChange(selfChange, null);
+		}
+		
+		@Override  
+	    public void onChange(boolean selfChange, Uri uri){
+			int code = matcher.match(uri);
+			switch (code) {
+			case STATION_APPEND:
+				mHandler.obtainMessage(MSG_STATION_CHANGED, 0, 0).sendToTarget();
+				break;
+			case STATION_ITEM:
+				int id = (int)ContentUris.parseId(uri);
+				mHandler.obtainMessage(MSG_STATION_CHANGED, id, 0).sendToTarget();
+				break;
+			default:
+				break;
+			}
+		}
+		
+		
+	}	
+	
+	private Handler mHandler = new Handler() {  
+		
+        public void handleMessage(Message msg) {                
+            //System.out.println("---mHanlder----");  
+            switch (msg.what) {  
+            case MSG_STATION_CHANGED:   
+            	updateStation(msg.arg1);
+                break;  
+            default:  
+                break;  
+            }  
+        }  
+        
+        /** 更新加油站映射表 */
+		private void updateStation(long id){
+			//加油站被添加了
+			if(id == 0){
+				//比较mStations映射表中与数据库中的加油站记录，补齐新加入的加油站
+			}//有个加油站被修改了
+			else{
+				//从数据库中提取所有加油站，并逐一比较
+			}
+		}
+    };  
+    
+    private MyContentObserver contentObserver = new MyContentObserver(mHandler);
+    
+    private void registerContentObservers() { 
+    	ContentResolver resolver = getContentResolver();
+    	Uri uri = ToFuelStations.CONTENT_URI;
+    	resolver.registerContentObserver(uri, true, contentObserver);
+    }
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -188,6 +281,8 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 		mYear = 2013;
 		mCar = mCars.get(1);
 		getLoaderManager().initLoader(0, null, this);
+		
+		registerContentObservers();
 		
 		//ArrayList<HashMap<String, String>> mylist = new ArrayList<HashMap<String, String>>(); 
 		//SimpleAdapter mSchedule
