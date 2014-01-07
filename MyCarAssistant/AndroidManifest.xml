@@ -47,6 +47,10 @@
             android:name="com.ssc.mycarassistant.ToFuelRecordEditor"
             android:label="@string/title_activity_to_fuel_record_editor" >
         </activity>
+        <activity
+            android:name="com.ssc.mycarassistant.CarInfoEditor"
+            android:label="@string/title_activity_car_info_editor" >
+        </activity>
     </application>
 
 </manifest>

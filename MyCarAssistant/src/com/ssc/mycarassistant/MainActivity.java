@@ -24,13 +24,17 @@ import android.widget.Toast;
 
 public class MainActivity extends LauncherActivity {
 
+	public static HashMap<Integer,String> mFuelClasses; //燃料种类
+	public static HashMap<Integer,Fuel> mFuels;			//燃料
+	public static HashMap<Integer,Car> mCars;			//车辆
+	
 	static int QUEST_CODE_MAGAGER = 1;
 	private Class<?>[] clazzs;
 	
 	
-	HashMap<Integer,Car> mCars;			//车辆
 	
-	Cursor mCursor;
+	
+	//Cursor mCursor;
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,7 +64,7 @@ public class MainActivity extends LauncherActivity {
     
     @Override
     public boolean	 onOptionsItemSelected(MenuItem item){
-    	if(item.getItemId() == R.id.mi_manage){
+    	if(item.getItemId() == R.id.action_settings){
     		startManagerView();
     		return true;
     	}
@@ -83,14 +87,12 @@ public class MainActivity extends LauncherActivity {
     }
     
     private boolean init(){
-//    	if(!readFuelClasses())
-//    		return false;
-//    	if(!readFuels())
-//    		return false;
-//    	if(!readCars())
-//    		return false;
-//    	if(!readStations())
-//    		return false;
+    	if(!readFuelClasses())
+    		return false;
+    	if(!readFuels())
+    		return false;
+    	if(!readCars())
+    		return false;
     	return true;     
     }
     
@@ -110,4 +112,120 @@ public class MainActivity extends LauncherActivity {
 //    		
 //    	}
 //    }
+    
+  //读取燃料种类 
+    private boolean readFuelClasses(){
+    	ContentResolver resolver = getContentResolver();  
+    	Cursor cursor = null;
+    	try
+        {        	
+        	cursor = resolver.query(FuelClasses.CONTENT_URI, null, null, null, null);
+        	if(cursor == null){
+        		Toast.makeText(this,getText(R.string.title_error),Toast.LENGTH_SHORT).show();
+        		return false;
+        	}
+        	else if(cursor.getCount() == 0){
+        		Toast.makeText(this,getText(R.string.error_info_null_fuelclass),Toast.LENGTH_SHORT).show();
+        		return false;
+        	}
+        	else{
+        		if(mFuelClasses == null)
+        			mFuelClasses = new HashMap<Integer,String>();
+        		else
+        			mFuelClasses.clear();
+        		while(cursor.moveToNext()){
+        			int id = cursor.getInt(0);
+        			String fuelName = cursor.getString(1);
+        			mFuelClasses.put(id, fuelName);
+        		}
+        	}        	
+        }
+        finally
+        {
+           if (cursor != null)
+              cursor.close();           
+        }
+        return true;
+    }
+    
+    /** 读取可用燃料 */
+    private boolean readFuels(){
+    	ContentResolver resolver = getContentResolver();   
+    	Cursor cursor = null;
+    	try
+        { 
+    		cursor = resolver.query(Fuels.CONTENT_URI, null, null, null, null);
+        	if(cursor == null){
+        		Toast.makeText(this,getText(R.string.title_error),Toast.LENGTH_SHORT).show();
+        		return false;
+        	}
+        	else if(cursor.getCount() == 0){
+        		Toast.makeText(this,getText(R.string.error_info_null_fuel),Toast.LENGTH_SHORT).show();
+        		return false;
+        	}
+        	else{
+        		if(mFuels == null)
+        			mFuels = new HashMap<Integer,Fuel>();
+        		else
+        			mFuels.clear();
+        		while(cursor.moveToNext()){
+        			int id = cursor.getInt(0);
+        			int fcId = cursor.getInt(1);
+        			String grade = cursor.getString(2);
+        			Fuel fuel = new Fuel(id,fcId,mFuelClasses.get(fcId),grade);
+        			mFuels.put(id, fuel);
+        		}
+        	}
+        }
+    	finally
+        {
+           if (cursor != null)
+              cursor.close();           
+        }
+    	return true;
+    }
+	
+	/** 读取所有的车辆填充cars数组 */
+	private boolean readCars(){		
+    	ContentResolver resolver = getContentResolver();  
+    	Cursor cursor = null;
+    	try{
+    		cursor = resolver.query(VehicleInfos.CONTENT_URI, null, null, null, null);
+        	if(cursor == null){
+        		Toast.makeText(this,getText(R.string.title_error),Toast.LENGTH_SHORT).show();
+        		return false;
+        	}
+        	else if(cursor.getCount() == 0){
+        		Toast.makeText(this,getText(R.string.error_info_null_vehicle),Toast.LENGTH_SHORT).show();
+        		return true;
+        	}
+        	else{
+        		int carNumber = cursor.getCount();
+        		if(mCars == null)
+        			mCars = new HashMap<Integer, Car>();
+        		else 
+        			mCars.clear();
+        		int row = 0;
+        		while(cursor.moveToNext()){        			
+        			int id = cursor.getInt(0);
+        			String number = cursor.getString(cursor.getColumnIndex(VehicleInfoColumns.NUMBER));
+        			int fuelId = cursor.getInt(cursor.getColumnIndex(VehicleInfoColumns.USE_FUEL));
+        			int boxVolume = cursor.getInt(cursor.getColumnIndex(VehicleInfoColumns.BOX_VOLUME));
+        			int mileage = cursor.getInt(cursor.getColumnIndex(VehicleInfoColumns.TOTAL_SCALE));
+        			int period_mileage = cursor.getInt(cursor.getColumnIndex(VehicleInfos.MAINTENANCE_MILEAGE));
+        			int period_month = cursor.getInt(cursor.getColumnIndex(VehicleInfos.MAINTENANCE_MONTH));
+        			Car car = new Car(id,number,mFuels.get(fuelId),boxVolume,mileage);
+        			car.setMileage(period_mileage);
+        			car.setPeriod(period_month);
+        			mCars.put(id, car);
+        		}
+        	}
+    	}
+    	finally
+        {
+           if (cursor != null)
+              cursor.close();           
+        }
+    	return true;
+    }
 }

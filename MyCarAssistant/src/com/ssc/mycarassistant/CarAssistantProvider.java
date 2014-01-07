@@ -70,7 +70,15 @@ public class CarAssistantProvider extends ContentProvider {
 		case TOFUEL_ITEM:
 			affected = mDbHelper.deleteToFuelRecord(id);
 			break;
-
+		case TOFUEL_CARS:
+			affected = mDbHelper.deleteToFuelRecords((int)id);
+			break;
+		case CAR_ITEM:
+			affected = mDbHelper.deleteVehicle(id);
+			break;
+		case FUEL_ITEM:
+			affected = mDbHelper.deleteFuel(id);
+			break;
 		default:
 			break;
 		}
@@ -101,12 +109,23 @@ public class CarAssistantProvider extends ContentProvider {
 			id = mDbHelper.insertToFuelRecord(values);
 			insertedUri = ContentUris.withAppendedId(uri, id);			
 			break;
-
+		case STATIONS:
+			id = mDbHelper.insertStation(values);
+			insertedUri = ContentUris.withAppendedId(uri, id);
+		case CARS:
+			id = mDbHelper.insertVehicle(values);
+			insertedUri = ContentUris.withAppendedId(uri, id);
+			break;
+		case FUELS:
+			id = mDbHelper.insertFuel(values);
+			insertedUri = ContentUris.withAppendedId(uri, id);
+		case FUELCLASSES:
+			id = mDbHelper.insertFuelClass(values);
+			insertedUri = ContentUris.withAppendedId(uri, id);
 		default:
 			break;
 		}
-		return insertedUri;
-		
+		return insertedUri;		
 	}
 
 	@Override
@@ -157,6 +176,7 @@ public class CarAssistantProvider extends ContentProvider {
 			case STATION_ITEM:
 				tableName = ToFuelStations.TABLE;
 				innerSelection = ToFuelStations._ID + " = ? ";
+				innerSelectionArgs = new String[]{pathSegments.get(1)};
 				break;
 			case TOFUELS:
 				tableName = ToFuelRecords.TABLE;
@@ -232,6 +252,14 @@ public class CarAssistantProvider extends ContentProvider {
 		case TOFUEL_ITEM:
 			id = (int)ContentUris.parseId(uri);
 			updates = mDbHelper.updateToFuelRecord(id, values);
+			break;
+		case STATION_ITEM:
+			id = (int)ContentUris.parseId(uri);
+			updates = mDbHelper.updateStation(id, values);
+			break;
+		case CAR_ITEM:
+			id = (int)ContentUris.parseId(uri);
+			updates = mDbHelper.updateVehicle(id, values);
 			break;
 		default:
 			break;

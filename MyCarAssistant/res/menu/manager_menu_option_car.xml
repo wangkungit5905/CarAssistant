@@ -1,0 +1,8 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <item android:id="@+id/mnu_mgr_addcar" 
+        android:title="@string/menu_mgr_add_car" 
+        android:showAsAction="always" />
+    
+    
+</menu>

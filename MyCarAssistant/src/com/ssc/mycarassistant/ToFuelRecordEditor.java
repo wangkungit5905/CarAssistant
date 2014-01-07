@@ -6,6 +6,7 @@ import java.util.Calendar;
 
 import com.ssc.mycarassistant.R.id;
 import com.ssc.mycarassistant.db.CarAssistant.ToFuelRecords;		
+import com.ssc.mycarassistant.db.CarAssistant.ToFuelStations;
 import com.ssc.mycarassistant.model.Car;
 import com.ssc.mycarassistant.model.Fuel;
 import com.ssc.mycarassistant.model.FuelStation;
@@ -19,6 +20,9 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.app.DatePickerDialog;
+import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -40,7 +44,8 @@ import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 import android.widget.Toast;
 
-public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnDateSetListener {
+public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnDateSetListener,
+StationChoiceFragment.OnSelectStationListener{
 	
 	//第三次测试pull操作
 	
@@ -67,8 +72,13 @@ public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnD
 	TextView mDateView,mStationView,mFuelView;
 	EditText mMoneyEdit,mMileageEdit,mAmountEdit,mDialEdit,mPriceEdit;
 	//ListView mStationView;
-	Button mBtnOk,mBtnCancel;
+	Button mBtnOk,mBtnCancel,mBtnNew;
 	
+	private StationChoiceFragment mStationFragment = null;
+	
+	private SimpleDateFormat TOFUELREC_DATE_FORMATER;	
+	
+	/** 这个类用来当用户点按燃料字段时，给用户选择所加注的燃料 */
 	public class FuelTypeListener implements OnClickListener{
 		Fuel[]  fuels;
 		int pos;		//找到当前加油记录所对应的燃料的索引
@@ -77,7 +87,7 @@ public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnD
 		public FuelTypeListener(){
 			//this.parent=parent;			
 			pos = -1;
-			Object[] items = ToFuelMgr.mFuels.values().toArray();
+			Object[] items = MainActivity.mFuels.values().toArray();
 			fuels = new Fuel[items.length];				
 			for(int i = 0; i < items.length; ++i)
 				fuels[i] = (Fuel)items[i];
@@ -108,6 +118,7 @@ public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnD
 		}
 	}
 	
+	/** 这个类用来实现当用户点按加油站字段时，弹出一个窗口给用户选择 */
 	public class StationListener implements OnClickListener{
 		FuelStation[] stations;
 		int pos;
@@ -143,6 +154,31 @@ public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnD
 				}
 			});
 			builder.create().show();
+		}
+		
+	}
+	
+	/** 这个类用来实现当用户点按加油站字段时，在当前视图的下部显示一个选择加油站的视图分段 */
+	public class StationListener2 implements OnClickListener{
+		private Activity parent;
+		
+		public StationListener2(Activity parent){
+			this.parent = parent;
+		}
+
+		@Override
+		public void onClick(View arg0) {
+			mBtnNew.setVisibility(View.VISIBLE);
+			FragmentManager fragmentManager = parent.getFragmentManager();
+			FragmentTransaction transaction = fragmentManager.beginTransaction();
+			if(mStationFragment == null){
+				//FuelStation[] stations = (FuelStation[]) ToFuelMgr.mStations.values().toArray();
+				mStationFragment = StationChoiceFragment.getInstance();
+			}
+			transaction.add(R.id.tofuel_editor_selector, mStationFragment);
+			transaction.commit();
+			mStationFragment.setStationId(mStationId);
+			//mStationFragment.setChoicedItem(mStationId);
 		}
 		
 	}
@@ -187,11 +223,11 @@ public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnD
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		Intent intent = getIntent();
-		
+		TOFUELREC_DATE_FORMATER = new SimpleDateFormat("yyyy-M-d");	
 		mRowId = intent.getLongExtra(ToFuelMgr.TF_BUNDLE_KEY_ROWID, 0);
 		if(mRowId == 0){
 			int id = intent.getIntExtra(ToFuelMgr.TF_BUNDLE_KEY_DEF_CAR, 1);
-			mDefCar = ToFuelMgr.mCars.get(id);
+			mDefCar = MainActivity.mCars.get(id);
 			id = intent.getIntExtra(ToFuelMgr.TF_BUNDLE_KEY_DEF_STATION, 1);
 			mDefStation = ToFuelMgr.mStations.get(id);
 		}
@@ -206,7 +242,10 @@ public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnD
         mStationView = (TextView)findViewById(R.id.tf_editor_station);
         mFuelView = (TextView)findViewById(R.id.tf_editor_fuel);
         mBtnOk = (Button)findViewById(R.id.tf_editor_bnt_ok);
-        mBtnCancel = (Button)findViewById(R.id.tf_editor_btn_cancel);		
+        mBtnCancel = (Button)findViewById(R.id.tf_editor_btn_cancel);	
+        mBtnNew = (Button)findViewById(R.id.tf_editor_btn_new_station);
+        mBtnNew.setVisibility(View.INVISIBLE);
+        
         
 		if(editMode){	
 			mAutoCalListener = new FieldAutoCal();
@@ -226,7 +265,8 @@ public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnD
 						}
 					});
 			mFuelView.setOnClickListener(new FuelTypeListener());		
-			mStationView.setOnClickListener(new StationListener());		
+			//mStationView.setOnClickListener(new StationListener());		
+			mStationView.setOnClickListener(new StationListener2(this));
 	        mBtnOk.setOnClickListener(
 	        		new OnClickListener() {						
 						@Override
@@ -242,11 +282,33 @@ public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnD
 						@Override
 						public void onClick(View v) {
 							setResult(RESULT_CANCELED);	
+							testContentObserver();
 							finish();
 						}
 					});
+	        mBtnNew.setOnClickListener(new OnClickListener() {
+				
+				@Override
+				public void onClick(View v) {
+					// TODO Auto-generated method stub
+					if(mStationFragment == null)
+						return;
+					mStationFragment.swithNewStationView();
+				}
+			});
 		}
 		fillDatas();		
+	}
+	
+	//一个测试函数，通过改变id为1的加油站的名称，来测试内容观察者是否会得到通知
+	void testContentObserver(){
+		Uri uri = ToFuelStations.CONTENT_URI;
+		//FuelStation station = ToFuelMgr.mStations.get(1);
+		uri = ContentUris.withAppendedId(uri, 1);
+		ContentValues values = new ContentValues();
+		values.put(ToFuelStations.NAME, "测试加油站的名称修改");
+		ContentResolver resolver = getContentResolver();
+		resolver.update(uri, values, null, null);
 	}
 
 	@Override
@@ -298,8 +360,6 @@ public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnD
 		}
 		Calendar calendar = Calendar.getInstance();
 		calendar.setTimeInMillis(mDate);
-		SimpleDateFormat TOFUELREC_DATE_FORMATER = new SimpleDateFormat("M-d");	
-		
 		mDateView.setText(TOFUELREC_DATE_FORMATER.format(calendar.getTime()));
 		if(mMoney != 0)
 			mMoneyEdit.setText(String.format("%.2f", mMoney));
@@ -311,7 +371,7 @@ public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnD
 			mDialEdit.setText(String.format("%.2f", mFuelDial));
 		if(mPrice != 0)
 			mPriceEdit.setText(String.format("%.2f", mPrice));
-        mFuelView.setText(ToFuelMgr.mFuels.get(mFuelId).toString());
+        mFuelView.setText(MainActivity.mFuels.get(mFuelId).toString());
         mStationView.setText(ToFuelMgr.mStations.get(mStationId).toString());
 	}
 	
@@ -414,7 +474,6 @@ public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnD
 		Calendar calendar = Calendar.getInstance();
 		calendar.set(year, monthOfYear, dayOfMonth);
 		mDate = calendar.getTimeInMillis();
-		SimpleDateFormat TOFUELREC_DATE_FORMATER = new SimpleDateFormat("M-d");
 		mDateView.setText(TOFUELREC_DATE_FORMATER.format(calendar.getTime()));		
 	}
 	
@@ -427,6 +486,18 @@ public class ToFuelRecordEditor extends Activity implements DatePickerDialog.OnD
 	public float getFuelDial(){return mFuelDial;}
 	public float getFualAmount(){return mFuelAmount;}
 	public float getPrice(){return mPrice;}
+
+	@Override
+	public void onSelectChanged(int id) {
+		if(id != mStationId){
+			mStationId = id;
+			mStationView.setText(ToFuelMgr.mStations.get(mStationId).name());
+		}
+		FragmentManager manager = getFragmentManager();
+		FragmentTransaction transaction = manager.beginTransaction();
+		transaction.remove(mStationFragment);
+		transaction.commit();
+	}
 
 	
 	

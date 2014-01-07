@@ -27,6 +27,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.R.bool;
 import android.R.integer;
 import android.app.Activity;
 import android.app.DialogFragment;
@@ -101,9 +102,11 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 	
 	public static final int MSG_STATION_CHANGED = 1;	//
 	
+	/* 内容变动类别 */
+	//public static final int CHANGE_TYPE_APPEND	= 1;	//新增
+	//public static final int CHANGE_TYPE_UPDATE	= 2;	//更新
 	
-	public static HashMap<Integer,String> mFuelClasses;  //燃料种类
-	public static HashMap<Integer,Fuel> mFuels;			//燃料
+	
 	public static HashMap<Integer,FuelStation> mStations;//加油站
 	
 	private int mStartYear,mEndYear;	//加油记录的起始/终止年份
@@ -113,7 +116,7 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 	private Spinner mCarNumber,mYearSpin;
 	private ListView mToFuelRecList;
 	int mScreenOrientation;					//当前屏幕方向（ORIENTATION_LANDSCAPE, ORIENTATION_PORTRAIT）
-	public static HashMap<Integer,Car> mCars;
+	
 	public Car mCar;		//当前选择的车辆
 	//Car[] mCarArray;	
 	//ToFuelRecord[] mToFuelRecords;
@@ -137,7 +140,7 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 		private final String TAG_STATION = "StationObserver";  
 		private final String TAG_FUEL		= "FuelObserver";
 		
-		private static final int STATION_APPEND 	= 1;//添加了加油站
+		//private static final int STATION_APPEND 	= 1;//添加了加油站
 		private static final int STATION_ITEM 		= 2;//加油站的属性发生了改变
 		
 		//private Handler mHandler ;
@@ -147,7 +150,7 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 			super(handler);
 			mHandler = handler;
 			matcher = new UriMatcher(UriMatcher.NO_MATCH);
-			matcher.addURI(CarAssistant.AUTHORITY, ToFuelStations.TABLE, STATION_APPEND);
+			//matcher.addURI(CarAssistant.AUTHORITY, ToFuelStations.TABLE, STATION_APPEND);
 			matcher.addURI(CarAssistant.AUTHORITY, ToFuelStations.TABLE+"/#", STATION_ITEM);
 		}
 		
@@ -159,12 +162,12 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 		@Override  
 	    public void onChange(boolean selfChange, Uri uri){
 			int code = matcher.match(uri);
+			int id = (int)ContentUris.parseId(uri);
 			switch (code) {
-			case STATION_APPEND:
-				mHandler.obtainMessage(MSG_STATION_CHANGED, 0, 0).sendToTarget();
-				break;
+			//case STATION_APPEND:
+			//	mHandler.obtainMessage(MSG_STATION_CHANGED, CHANGE_TYPE_APPEND, id).sendToTarget(); 
+			//	break;
 			case STATION_ITEM:
-				int id = (int)ContentUris.parseId(uri);
 				mHandler.obtainMessage(MSG_STATION_CHANGED, id, 0).sendToTarget();
 				break;
 			default:
@@ -191,21 +194,45 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
         /** 更新加油站映射表 */
 		private void updateStation(long id){
 			//加油站被添加了
-			if(id == 0){
-				//比较mStations映射表中与数据库中的加油站记录，补齐新加入的加油站
-			}//有个加油站被修改了
-			else{
-				//从数据库中提取所有加油站，并逐一比较
+			ContentResolver resolver = getContentResolver();
+			Uri uri = ContentUris.withAppendedId(ToFuelStations.CONTENT_URI, id);
+			Cursor cursor = resolver.query(uri, null, null, null, null);
+			if(cursor == null || cursor.getCount() != 1)
+				return;
+			cursor.moveToNext();
+			String name = cursor.getString(cursor.getColumnIndex(ToFuelStations.NAME));
+			String addr = cursor.getString(cursor.getColumnIndex(ToFuelStations.ADDRESS));
+			double lon = cursor.getDouble(cursor.getColumnIndex(ToFuelStations.LON));
+			double lat = cursor.getDouble(cursor.getColumnIndex(ToFuelStations.LAT));
+			//还有坐标类别的处理...
+			FuelStation station = null;
+			if(!mStations.containsKey(id))	{
+				station = new FuelStation((int)id, name, addr);
+				station.setCoodination(lat, lon);
+				station.setCoodinationType(COODINATIONTYPE.CT_GPS);
+				mStations.put((int)id, station);
 			}
+			else{
+				station = mStations.get(id);
+				station.setName(name);
+				station.setAddress(addr);
+				station.setCoodination(lat, lon);
+			}	
 		}
     };  
     
     private MyContentObserver contentObserver = new MyContentObserver(mHandler);
     
-    private void registerContentObservers() { 
+    /** 注册或注销内容观察者 */
+    private void registerContentObservers(boolean reg) { 
     	ContentResolver resolver = getContentResolver();
     	Uri uri = ToFuelStations.CONTENT_URI;
-    	resolver.registerContentObserver(uri, true, contentObserver);
+    	if(reg){    		    		
+    		resolver.registerContentObserver(uri, true, contentObserver);//注册监视对加油站记录的更新、插入和批量插入
+    	}
+    	else{
+    		resolver.unregisterContentObserver(contentObserver);
+    	}    	
     }
 	
 	@Override
@@ -220,43 +247,58 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 		mYearSpin.setOnItemSelectedListener(this);
 		mToFuelRecList = (ListView)findViewById(R.id.toFuelRecords);
 		mToFuelRecList.setOnItemClickListener(this);
-		//mToFuelRecList.setOnItemLongClickListener(this);
 		
 		LayoutInflater inflater = LayoutInflater.from(this);
 		mTitlePort = inflater.inflate(R.layout.tofue_table_title_port, mToFuelRecList, false);
 		mTitleLand = inflater.inflate(R.layout.tofue_table_title_land, mToFuelRecList, false);
 		
 		if(!init())
-			return;
-		
-		String[] fromFields = getFromFields();
-		int[] toViews = getToViews();
-		
-		//String uriStr = ToFuelRecords.CONTENT_URI_CAR_YEARS.toString();
-		//uriStr = uriStr + "/" + Integer.toString(1) + "/" + Integer.toString(2013);
-		//Uri uri = Uri.parse(uriStr);
-		
-		//这里使用了直接在UI线程中读取加油记录并将返回的光标绑定到列表
-		//ContentResolver resolver = getContentResolver();  		
-		//mCursor = resolver.query(uri, null, null, null, null);
-    	//if(mCursor == null){
-    	//	Toast.makeText(this,getText(R.string.title_error),Toast.LENGTH_SHORT).show();
-    	//	return;
-    	//}
-    	//else if(mCursor.getCount() == 0)        		
-    	//	Toast.makeText(this,"无记录",Toast.LENGTH_SHORT).show(); 
-    	
+			return;    	
     	registerForContextMenu(mToFuelRecList);
 				
 		//初始化车辆列表
 		//mCarArray = mCars.values().toArray(new Car[mCars.size()]);		
 		ArrayAdapter<Car> adapterCar = new ArrayAdapter<Car>(this,android.R.layout.simple_spinner_item,
-				mCars.values().toArray(new Car[mCars.size()]));
-		//adapterCar.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+				MainActivity.mCars.values().toArray(new Car[MainActivity.mCars.size()]));
 		mCarNumber.setAdapter(adapterCar);
-		
-		mStartYear = 2010;	//这个应该从实际的数据库中读取到
-		mEndYear = 2013;
+		Calendar calendar = Calendar.getInstance();
+		Date curDate = new Date();
+		calendar.setTimeInMillis(curDate.getTime());
+		int curYear = calendar.get(Calendar.YEAR);
+		if(adapterCar.getCount() == 0){
+			mStartYear = curYear;
+			mEndYear = curYear;
+			mYear = curYear;
+			mCar = null;
+		}
+		else{
+			mCar = adapterCar.getItem(0);
+			ContentResolver resolver = getContentResolver();
+			String[] projection = new String[2];
+			projection[0] = String.format("max(%s)", ToFuelRecords.DATE);
+			projection[1] = String.format("min(%s)", ToFuelRecords.DATE);
+			String where = ToFuelRecords.VEHICLE + " = ? ";
+			String[] argus = new String[]{Integer.toString(mCar.ID())};
+			Cursor cursor = resolver.query(ToFuelRecords.CONTENT_URI, projection, where, argus, null);
+			if(cursor != null){
+				cursor.moveToNext();
+				long y1 = cursor.getLong(0);
+				long y2 = cursor.getLong(1);	
+				if(y1 == 0 && y2 == 0){
+					mStartYear = curYear;
+					mEndYear = curYear;
+					mYear = curYear;
+					mCar = null;
+				}
+				else {
+					calendar.setTimeInMillis(y1);
+				mEndYear = calendar.get(Calendar.YEAR);
+				calendar.setTimeInMillis(y2);
+				mStartYear = calendar.get(Calendar.YEAR);
+				mYear = mEndYear;
+				}								
+			}
+		}
 		int count = mEndYear - mStartYear + 1;
 		int year = mEndYear;
 		mSpanYear = new String[count];
@@ -265,27 +307,27 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 		ArrayAdapter<String> adapterYear = new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item,mSpanYear);
 		mYearSpin.setAdapter(adapterYear);
 		
-		//初始化已有加油记录的年份列表
-		
-		//初始化加油记录列表
+		//初始化加油记录列表表头
 		if(mScreenOrientation == Configuration.ORIENTATION_PORTRAIT)
 			mToFuelRecList.addHeaderView(mTitlePort);
 		else {
 			mToFuelRecList.addHeaderView(mTitleLand);
 		}
-		//adapterRec = new SimpleCursorAdapter(this, R.layout.tofuelrec_listitem, mCursor, fromFields, toViews, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
+		
+		String[] fromFields = getFromFields();
+		int[] toViews = getToViews();
 		adapterRec = new SimpleCursorAdapter(this, R.layout.tofuelrec_listitem, null, fromFields, toViews, 0);
 		adapterRec.setViewBinder(this);
 		mToFuelRecList.setAdapter(adapterRec);
-		
-		mYear = 2013;
-		mCar = mCars.get(1);
-		getLoaderManager().initLoader(0, null, this);
-		
-		registerContentObservers();
-		
-		//ArrayList<HashMap<String, String>> mylist = new ArrayList<HashMap<String, String>>(); 
-		//SimpleAdapter mSchedule
+		if(mCar != null)
+			getLoaderManager().initLoader(0, null, this);		
+		registerContentObservers(true);
+	}
+	
+	@Override
+	public void onDestroy(){
+		registerContentObservers(false);
+		super.onDestroy();
 	}
 	
 	@Override
@@ -342,17 +384,9 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
         // Another interface callback
     }
 	
-	private boolean init(){	
-		if(!readFuelClasses())
-			return false;
-		if(!readFuels())
-			return false;
-		if(!readCars())
-			return false;
+	private  boolean init(){	
 		if(!readStations())
 			return false;
-		//if(!readToFuelRecords())
-		//	return false;
 		return true;
 	}
 	
@@ -368,114 +402,7 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 	}
 	
 	
-	 //读取燃料种类 
-    private boolean readFuelClasses(){
-    	ContentResolver resolver = getContentResolver();  
-    	try
-        {        	
-        	mCursor = resolver.query(FuelClasses.CONTENT_URI, null, null, null, null);
-        	if(mCursor == null){
-        		Toast.makeText(this,getText(R.string.title_error),Toast.LENGTH_SHORT).show();
-        		return false;
-        	}
-        	else if(mCursor.getCount() == 0){
-        		Toast.makeText(this,getText(R.string.error_info_null_fuelclass),Toast.LENGTH_SHORT).show();
-        		return false;
-        	}
-        	else{
-        		if(mFuelClasses == null)
-        			mFuelClasses = new HashMap<Integer,String>();
-        		else
-        			mFuelClasses.clear();
-        		while(mCursor.moveToNext()){
-        			int id = mCursor.getInt(0);
-        			String fuelName = mCursor.getString(1);
-        			mFuelClasses.put(id, fuelName);
-        		}
-        	}        	
-        }
-        finally
-        {
-           if (mCursor != null)
-              mCursor.close();           
-        }
-        return true;
-    }
-    
-    /** 读取可用燃料 */
-    private boolean readFuels(){
-    	ContentResolver resolver = getContentResolver();  
-    	try
-        { 
-    		mCursor = resolver.query(Fuels.CONTENT_URI, null, null, null, null);
-        	if(mCursor == null){
-        		Toast.makeText(this,getText(R.string.title_error),Toast.LENGTH_SHORT).show();
-        		return false;
-        	}
-        	else if(mCursor.getCount() == 0){
-        		Toast.makeText(this,getText(R.string.error_info_null_fuel),Toast.LENGTH_SHORT).show();
-        		return false;
-        	}
-        	else{
-        		if(mFuels == null)
-        			mFuels = new HashMap<Integer,Fuel>();
-        		else
-        			mFuels.clear();
-        		while(mCursor.moveToNext()){
-        			int id = mCursor.getInt(0);
-        			int fcId = mCursor.getInt(1);
-        			String grade = mCursor.getString(2);
-        			Fuel fuel = new Fuel(id,fcId,mFuelClasses.get(fcId),grade);
-        			mFuels.put(id, fuel);
-        		}
-        	}
-        }
-    	finally
-        {
-           if (mCursor != null)
-              mCursor.close();           
-        }
-    	return true;
-    }
-	
-	/** 读取所有的车辆填充cars数组 */
-	private boolean readCars(){		
-    	ContentResolver resolver = getContentResolver();  
-    	try{
-    		mCursor = resolver.query(VehicleInfos.CONTENT_URI, null, null, null, null);
-        	if(mCursor == null){
-        		Toast.makeText(ToFuelMgr.this,getText(R.string.title_error),Toast.LENGTH_SHORT).show();
-        		return false;
-        	}
-        	else if(mCursor.getCount() == 0){
-        		Toast.makeText(ToFuelMgr.this,getText(R.string.error_info_null_vehicle),Toast.LENGTH_SHORT).show();
-        		return true;
-        	}
-        	else{
-        		int carNumber = mCursor.getCount();
-        		if(mCars == null)
-        			mCars = new HashMap<Integer, Car>();
-        		else 
-        			mCars.clear();
-        		int row = 0;
-        		while(mCursor.moveToNext()){        			
-        			int id = mCursor.getInt(0);
-        			String number = mCursor.getString(mCursor.getColumnIndex(VehicleInfoColumns.NUMBER));
-        			int fuelId = mCursor.getInt(mCursor.getColumnIndex(VehicleInfoColumns.USE_FUEL));
-        			int boxVolume = mCursor.getInt(mCursor.getColumnIndex(VehicleInfoColumns.BOX_VOLUME));
-        			int mileage = mCursor.getInt(mCursor.getColumnIndex(VehicleInfoColumns.TOTAL_SCALE));
-        			Car car = new Car(id,number,mFuels.get(fuelId),boxVolume,mileage);
-        			mCars.put(id, car);
-        		}
-        	}
-    	}
-    	finally
-        {
-           if (mCursor != null)
-              mCursor.close();           
-        }
-    	return true;
-    }
+	 
 
 	/** 读取加油站 */
 	private boolean readStations(){
@@ -531,7 +458,7 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 			break;
 		case 3:		//油品种类
 			int fuelId = cursor.getInt(columnIndex);
-			v.setText(mFuels.get(fuelId).toString());
+			v.setText(MainActivity.mFuels.get(fuelId).toString());
 			break;
 		case 4:		//里程表读数
 			double mileage = cursor.getDouble(columnIndex);

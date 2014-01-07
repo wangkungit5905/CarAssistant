@@ -17,6 +17,7 @@ import com.ssc.mycarassistant.db.CarAssistant.ToFuelStations;
 import com.ssc.mycarassistant.db.CarAssistant.VehicleInfoColumns;
 import com.ssc.mycarassistant.db.CarAssistant.VehicleInfos;
 
+import android.R.integer;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -61,8 +62,8 @@ public class DbHelper extends SQLiteOpenHelper {
 		db.execSQL("insert into ToFuelStations(name,address,latitude,longitude,coordinateType) values('钟公庙加油站','宁波市鄞州区四明西路',0,0,'GPS')");
 		
 		//添加车辆记录
-		db.execSQL("insert into VehicleInfos(number,totalScale,boxVolume,useFuel) values('浙B-138H6',20,60,1)");
-		db.execSQL("insert into VehicleInfos(number,totalScale,boxVolume,useFuel) values('浙B-00000',30,60,2)");
+		db.execSQL("insert into VehicleInfos(number,totalScale,boxVolume,useFuel,maintenanceMileage,maintenanceMonth) values('浙B-138H6',20,60,1,3000,6)");
+		db.execSQL("insert into VehicleInfos(number,totalScale,boxVolume,useFuel,maintenanceMileage,maintenanceMonth) values('浙B-00000',30,60,2,5000,6)");
 		
 		
 		//添加一条加油记录
@@ -138,15 +139,25 @@ public class DbHelper extends SQLiteOpenHelper {
 		return affected;
 	}
 	
+	/** 删除指定车辆的加油记录 */
+	public int deleteToFuelRecords(int carId){
+		String where = ToFuelRecords.VEHICLE + " = " + carId;
+		SQLiteDatabase db = getWritableDatabase();
+		int affected = db.delete(ToFuelRecords.TABLE, where, null);
+		ContentResolver resolver = this.mContext.getContentResolver();
+	    Uri notifyUri = ToFuelRecords.CONTENT_URI;
+	    resolver.notifyChange(notifyUri, null);  
+		return affected;
+	}
+	
 	/** 更新加油站记录 */
 	public int updateStation(int id, ContentValues values){
 		String whereclause = ToFuelStations._ID + " = " + id;
 		SQLiteDatabase mDb = getWritableDatabase();
 	    int updates = mDb.update(ToFuelStations.TABLE, values, whereclause, null);
-	    //如何使加油记录管理Activity知道此更新呢？
-	    //ContentResolver resolver = this.mContext.getContentResolver();
-	    //Uri notifyUri = ToFuelStations.CONTENT_URI;
-	    //resolver.notifyChange(notifyUri, null);
+	    ContentResolver resolver = this.mContext.getContentResolver();
+	    Uri notifyUri = ContentUris.withAppendedId(ToFuelStations.CONTENT_URI, id);
+	    resolver.notifyChange(notifyUri, null);
 		return updates;
 	}
 	
@@ -154,9 +165,9 @@ public class DbHelper extends SQLiteOpenHelper {
 	public long insertStation(ContentValues values){
 		SQLiteDatabase db = getWritableDatabase();
 		long id = db.insert(ToFuelStations.TABLE, null, values);
-		//ContentResolver resolver = this.mContext.getContentResolver();
-	    //Uri notifyUri = ToFuelStations.CONTENT_URI;
-	    //resolver.notifyChange(notifyUri, null);  
+		ContentResolver resolver = this.mContext.getContentResolver();
+	    Uri notifyUri = ContentUris.withAppendedId(ToFuelStations.CONTENT_URI, id);
+	    resolver.notifyChange(notifyUri, null);  
 		return id;
 	}
 	
@@ -170,15 +181,71 @@ public class DbHelper extends SQLiteOpenHelper {
 	    //resolver.notifyChange(notifyUri, null);  
 		return affected;
 	}
+	
+	/** 插入燃料类别 */
+	public long insertFuelClass(ContentValues values){
+		SQLiteDatabase db = getWritableDatabase();
+		long id = db.insert(FuelClasses.TABLE, null, values);
+		ContentResolver resolver = this.mContext.getContentResolver();
+	    Uri notifyUri = FuelClasses.CONTENT_URI;
+	    resolver.notifyChange(notifyUri, null);  
+		return id;
+	}
+	
 	/** 更新燃料记录 */
 	
 	/** 插入燃料记录 */
+	public long insertFuel(ContentValues values){
+		SQLiteDatabase db = getWritableDatabase();
+		long id = db.insert(Fuels.TABLE, null, values);
+		ContentResolver resolver = this.mContext.getContentResolver();
+	    Uri notifyUri = Fuels.CONTENT_URI;
+	    resolver.notifyChange(notifyUri, null);  
+		return id;
+	}
 	
 	/** 删除燃料记录 */
+	public int deleteFuel(long id){
+		String select = Fuels._ID + " = " + id;
+		SQLiteDatabase db = getWritableDatabase();
+		int affected = db.delete(Fuels.TABLE, select, null);
+		ContentResolver resolver = this.mContext.getContentResolver();
+	    Uri notifyUri = Fuels.CONTENT_URI;
+	    resolver.notifyChange(notifyUri, null);  
+		return affected;
+	}
 	
 	/** 更新车辆记录 */
+	public int updateVehicle(int id, ContentValues values){
+		String whereclause = VehicleInfos._ID + " = " + id;
+		SQLiteDatabase mDb = getWritableDatabase();
+	    int updates = mDb.update(VehicleInfos.TABLE, values, whereclause, null);
+	    ContentResolver resolver = this.mContext.getContentResolver();
+	    Uri notifyUri = ContentUris.withAppendedId(ToFuelStations.CONTENT_URI, id);
+	    resolver.notifyChange(notifyUri, null);
+		return updates;
+	}
 	
 	/** 插入车辆记录 */
+	public long insertVehicle(ContentValues values){
+		SQLiteDatabase db = getWritableDatabase();
+		long id = db.insert(VehicleInfos.TABLE, null, values);
+		ContentResolver resolver = this.mContext.getContentResolver();
+	    Uri notifyUri = VehicleInfos.CONTENT_URI;
+	    resolver.notifyChange(notifyUri, null);  
+		return id;
+	}
+	
+	/** 删除车辆 */
+	public int deleteVehicle(long id){
+		String select = VehicleInfos._ID + " = " + id;
+		SQLiteDatabase db = getWritableDatabase();
+		int affected = db.delete(VehicleInfos.TABLE, select, null);
+		ContentResolver resolver = this.mContext.getContentResolver();
+	    Uri notifyUri = VehicleInfos.CONTENT_URI;
+	    resolver.notifyChange(notifyUri, null);  
+		return affected;
+	}
 	
 	/** 删除车辆记录 */
 	

@@ -85,6 +85,8 @@ public final class CarAssistant {
 				"," + VehicleInfos.TOTAL_SCALE + " " + VehicleInfos.TOTAL_TYPE + 
 				"," + VehicleInfos.BOX_VOLUME + " " + VehicleInfos.VOLUME_TYPE + 
 				"," + VehicleInfos.USE_FUEL + " " + VehicleInfos.USE_FUEL_TYPE + 
+				"," + VehicleInfos.MAINTENANCE_MILEAGE + " " + VehicleInfos.MILEAGE_TYPE + 
+				"," + VehicleInfos.MAINTENANCE_MONTH + " " + VehicleInfos.MONTH_TYPE + 
 				");";
 	}
 	
@@ -131,6 +133,10 @@ public final class CarAssistant {
 		static final String VOLUME_TYPE		 	= "INTEGER NOT NULL";
 		public static final String USE_FUEL		= "useFuel";			//使用的燃料类型
 		static final String USE_FUEL_TYPE		= "INTEGER NOT NULL";
+		public static final String MAINTENANCE_MILEAGE		= "maintenanceMileage";			//保养间隔里程
+		static final String MILEAGE_TYPE		= "INTEGER NOT NULL";
+		public static final String MAINTENANCE_MONTH		= "maintenanceMonth";			//保养间隔月份数
+		static final String MONTH_TYPE		= "INTEGER NOT NULL";
 		static final String _ID_TYPE        	= "INTEGER PRIMARY KEY AUTOINCREMENT";
 	}
 	

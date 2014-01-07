@@ -17,9 +17,13 @@ public class Car {
 	
 	public int ID(){return id;}
 	public String number(){return mNumber;}
+	public void setNumber(String number){mNumber=number;}
 	public Fuel usedFuel(){return mUsedFuel;}
+	public void setUsedFuel(Fuel fuel){mUsedFuel=fuel;}
 	public int boxVolume(){return mBoxVolume;}
+	public void setBoxVolume(int volume){mBoxVolume=volume;}
 	public int totalScale(){return mTotalScale;}
+	public void setTotalScale(int scale){mTotalScale=scale;}
 	public String toString(){return mNumber;}
 	
 	public int mileage(){return maintenanceMileage;}

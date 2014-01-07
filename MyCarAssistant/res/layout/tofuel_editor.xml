@@ -154,6 +154,20 @@
             android:layout_height="wrap_content"
             android:text="@string/btn_text_cancel" />
 
+        <Button
+            android:id="@+id/tf_editor_btn_new_station"
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_text_new_station" />
+
     </LinearLayout>
+
+    <RelativeLayout
+        android:id="@+id/tofuel_editor_selector"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="10dp" >
+    </RelativeLayout>
 
 </LinearLayout>
