@@ -1,68 +1,112 @@
 package com.ssc.mycarassistant;
 
 import java.util.HashMap;
+import java.util.Iterator;
 
 import com.ssc.mycarassistant.db.CarAssistant.FuelClasses;
 import com.ssc.mycarassistant.db.CarAssistant.Fuels;
-import com.ssc.mycarassistant.db.CarAssistant.ToFuelStationColumns;
-import com.ssc.mycarassistant.db.CarAssistant.ToFuelStations;
+import com.ssc.mycarassistant.db.CarAssistant.ToFuelRecords;
 import com.ssc.mycarassistant.db.CarAssistant.VehicleInfoColumns;
 import com.ssc.mycarassistant.db.CarAssistant.VehicleInfos;
 import com.ssc.mycarassistant.model.Car;
 import com.ssc.mycarassistant.model.Fuel;
-import com.ssc.mycarassistant.model.FuelStation;
 
-import android.app.LauncherActivity;
+import android.R.integer;
+import android.os.Bundle;
+import android.app.Activity;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.ArrayAdapter;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.BaseAdapter;
+import android.widget.GridLayout;
+import android.widget.GridView;
+import android.widget.ImageView;
 import android.widget.Toast;
 
-public class MainActivity extends LauncherActivity {
-
+public class MainActivity extends Activity {
+	
+	private GridView mGridView;
+	private Class<?>[] clazzs;
 	public static HashMap<Integer,String> mFuelClasses; //燃料种类
 	public static HashMap<Integer,Fuel> mFuels;			//燃料
 	public static HashMap<Integer,Car> mCars;			//车辆
 	
-	static int QUEST_CODE_MAGAGER = 1;
-	private Class<?>[] clazzs;
-	
-	
-	
-	
-	//Cursor mCursor;
-	
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        //setContentView(R.layout.activity_main);
+	public class ImageAdapter extends BaseAdapter {
+	    private Context mContext;
 
-		//定义两个Activity的名称  
-	    String[] names = {"加油记录", "维保记录"}; 
-	    //定义两个Activity对应的实现类  
-	    clazzs = new Class<?>[2];
-	    clazzs[0] = ToFuelMgr.class;
-	    clazzs[1] = RepailMgr.class;
-	    //clazzs = {ToFuelMgr.class, RepailMgr.class};
-	    ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1 
-                , names); 
-	    setListAdapter(adapter); 
-	    init();
-    }
+	    public ImageAdapter(Context c) {
+	        mContext = c;
+	    }
 
+	    public int getCount() {
+	        return mThumbIds.length;
+	    }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
+	    public Object getItem(int position) {
+	        return null;
+	    }
+
+	    public long getItemId(int position) {
+	        return 0;
+	    }
+	    
+	    public View getView(int position, View convertView, ViewGroup parent) {
+	        ImageView imageView;
+	        if (convertView == null) {  // if it's not recycled, initialize some attributes
+	            imageView = new ImageView(mContext);
+	            imageView.setLayoutParams(new GridView.LayoutParams(100, 100));
+	            imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+	            imageView.setPadding(10, 10, 10, 10);
+	        } else {
+	            imageView = (ImageView) convertView;
+	        }
+
+	        imageView.setImageResource(mThumbIds[position]);
+	        return imageView;
+	    }
+
+	    // references to our images
+	    private Integer[] mThumbIds = {
+	    		R.drawable.tofuelmgr,
+	    		R.drawable.fuel_consumption,
+	    		R.drawable.maintance	    		
+	    };
+	}
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.main_activity2);
+		init();
+		
+	    
+		mGridView = (GridView)findViewById(R.id.gridview);
+		ImageAdapter adapter = new ImageAdapter(this);
+		mGridView.setAdapter(adapter);
+		mGridView.setOnItemClickListener(new OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+				Intent intent = new Intent(MainActivity.this, clazzs[position]);
+				startActivity(intent);
+			}
+		});
+		
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.main, menu);
         return true;
-    }
-    
-    @Override
+	}
+	
+	@Override
     public boolean	 onOptionsItemSelected(MenuItem item){
     	if(item.getItemId() == R.id.action_settings){
     		startManagerView();
@@ -71,22 +115,19 @@ public class MainActivity extends LauncherActivity {
     	else
     		return super.onOptionsItemSelected(item);
     }
-    
-    //根据列表项返回指定Activity对应的Intent  
-    @Override 
-    protected Intent intentForPosition(int position) { 
-        // TODO Auto-generated method stub  
-        return new Intent(MainActivity.this, clazzs[position]); 
-    } 
-    
-    /** 启动管理界面 */
+	
+	/** 启动管理界面 */
     private void startManagerView(){
     	Intent intent = new Intent(MainActivity.this, ManagerActivity.class);
-    	//Bundle data = new Bundle();
     	startActivity(intent);
     }
-    
-    private boolean init(){
+	
+	private boolean init(){
+		clazzs = new Class<?>[3];
+	    clazzs[0] = ToFuelMgr.class;
+	    clazzs[1] = FuelConsumption.class;
+	    clazzs[2] = RepailMgr.class;
+	    
     	if(!readFuelClasses())
     		return false;
     	if(!readFuels())
@@ -95,25 +136,8 @@ public class MainActivity extends LauncherActivity {
     		return false;
     	return true;     
     }
-    
-   
-    
-    
-    
-    
-    
-    
-    
-//    @Override 
-//    protected void onActivityResult(int requestCode, int resultCode, Intent data){
-//    	if(resultCode == 0)
-//    		return;
-//    	if(requestCode == QUEST_CODE_MAGAGER){
-//    		
-//    	}
-//    }
-    
-  //读取燃料种类 
+	
+	//读取燃料种类 
     private boolean readFuelClasses(){
     	ContentResolver resolver = getContentResolver();  
     	Cursor cursor = null;
@@ -187,6 +211,10 @@ public class MainActivity extends LauncherActivity {
 	
 	/** 读取所有的车辆填充cars数组 */
 	private boolean readCars(){		
+		if(mCars == null)
+			mCars = new HashMap<Integer, Car>();
+		else 
+			mCars.clear();
     	ContentResolver resolver = getContentResolver();  
     	Cursor cursor = null;
     	try{
@@ -200,11 +228,7 @@ public class MainActivity extends LauncherActivity {
         		return true;
         	}
         	else{
-        		int carNumber = cursor.getCount();
-        		if(mCars == null)
-        			mCars = new HashMap<Integer, Car>();
-        		else 
-        			mCars.clear();
+        		int carNumber = cursor.getCount();        		
         		int row = 0;
         		while(cursor.moveToNext()){        			
         			int id = cursor.getInt(0);
@@ -217,9 +241,40 @@ public class MainActivity extends LauncherActivity {
         			Car car = new Car(id,number,mFuels.get(fuelId),boxVolume,mileage);
         			car.setMileage(period_mileage);
         			car.setPeriod(period_month);
+        			car.setInitFuelVolume(10);	//临时代码，设置初始油量和里程数据
+        			car.setInitMileage(7);
         			mCars.put(id, car);
         		}
         	}
+        	
+        	//读取车辆的初始信息
+        	Iterator<Car> iterator = mCars.values().iterator();
+        	String[] projection = new String[]{ToFuelRecords.DATE,ToFuelRecords.MILEAGE,ToFuelRecords.FUEL_DIAL};        	
+        	String where;        
+        	String[] args = new String[1];
+        	while (iterator.hasNext()) {
+				Car car = iterator.next();
+				where = ToFuelRecords.VEHICLE + " = ? and " + ToFuelRecords.MONEY + " = 0";
+				args[0] = Integer.toString(car.ID());
+				cursor = resolver.query(ToFuelRecords.CONTENT_URI, projection, where, args, null);
+				if(cursor == null){
+					Toast.makeText(this, "查询出错！", Toast.LENGTH_SHORT);
+					break;
+				}
+				else if(cursor.getCount() > 1){
+					Toast.makeText(this, "出现多个初始记录！", Toast.LENGTH_SHORT);
+					break;
+				}
+				else{
+					cursor.moveToNext();
+					long date = cursor.getLong(0);
+					int initMileage = cursor.getInt(1);
+					float initDial = cursor.getFloat(2);
+					car.setInitMileage(initMileage);
+					car.setInitFuelDial(initDial);
+					car.setInitDate(date);
+				}
+			}
     	}
     	finally
         {
@@ -228,4 +283,5 @@ public class MainActivity extends LauncherActivity {
         }
     	return true;
     }
+
 }

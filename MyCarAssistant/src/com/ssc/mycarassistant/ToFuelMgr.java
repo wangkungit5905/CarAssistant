@@ -27,6 +27,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.R.anim;
 import android.R.bool;
 import android.R.integer;
 import android.app.Activity;
@@ -60,6 +61,7 @@ import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.CursorAdapter;
 import android.widget.GridView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -93,8 +95,10 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 	
 	public static final String TF_BUNDLE_KEY_ROWID	  = "com.ssc.mycarassistant.tf_record_id";	//要显示或编辑的记录id，对于新记录，则为0
 	public static final String TF_BUNDLE_KEY_EDITMODE = "com.ssc.mycarassistant.editMOde";	    //编辑模式（true：编辑，flase：只读显示）
+	public static final String TF_BUNDLE_KEY_YEAR	  = "com.ssc.mycarassistant.year";			//加油记录所属年份
 	public static final String TF_BUNDLE_KEY_DEF_CAR = "com.ssc.mycarassistant.def_car";		//默认车辆
 	public static final String TF_BUNDLE_KEY_DEF_STATION = "com.ssc.mycarassistant.def_station";//默认加油站id
+	public static final String TF_BUNDLE_KEY_DEF_DATE = "com.ssc.mycarassistant.def_date";//默认日期
 	
 	
 	public static final int REQUEST_CODE_EDIT = 1;		//请求编辑操作
@@ -112,6 +116,12 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 	private int mStartYear,mEndYear;	//加油记录的起始/终止年份
 	private String[] mSpanYear;			//加油记录所跨越的年份	
 	private int mYear;
+	private Car[] mCars;
+	
+	private static int INIT_STAGE_ONE = 1;	//界面初始化阶段
+	private static int INIT_STAGE_TWO = 2;	//初始化阶段-中间临时阶段（比如触发车辆选择，但为触发年份选择，此时不必装载加油记录）
+	private static int INIT_STAGE_THREE = 3;	//初始化阶段-可以读取加油记录
+	private int initStage = INIT_STAGE_ONE;	//初始化阶段标志（为了避免不必要的多次装载）
 	
 	private Spinner mCarNumber,mYearSpin;
 	private ListView mToFuelRecList;
@@ -123,7 +133,8 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 	private Cursor mCursor;
 	private View mTitlePort,mTitleLand;		//标题条
 	
-	//ToFuelRecordsAdapter adapterRec;
+	ArrayAdapter<Car> adapterCar;
+	//ToFuelRecordsAdapter adapterRec;	
 	SimpleCursorAdapter adapterRec;
 	
 	//其实更新机制可以有两种实现方式
@@ -242,11 +253,29 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 		setContentView(R.layout.activity_to_fuel_mgr);
 		mScreenOrientation = getResources().getConfiguration().orientation;
 		mCarNumber = (Spinner)findViewById(R.id.carNumbers);
+		
+		//以下显示列表为空时的信息，但可惜没有任何效果
+//		TextView emptyView = new TextView(this);  
+//		emptyView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));  
+//		emptyView.setText("亲，还没有记录哦！");  
+//		emptyView.setVisibility(View.GONE);  
+//		((ViewGroup)mCarNumber.getParent()).addView(emptyView);  
+//		mCarNumber.setEmptyView(emptyView); 
+		
+		//这是另外一种方法，添加的视图是在程序中展开（inflate）的视图
+		//addContentView(emptyView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT,ViewGroup.LayoutParams.FILL_PARENT));
+		
 		mYearSpin = (Spinner)findViewById(R.id.toFuel_years);
 		mCarNumber.setOnItemSelectedListener(this);
 		mYearSpin.setOnItemSelectedListener(this);
 		mToFuelRecList = (ListView)findViewById(R.id.toFuelRecords);
 		mToFuelRecList.setOnItemClickListener(this);
+		TextView emptyView1 = new TextView(this);  
+		emptyView1.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));  
+		emptyView1.setText("亲，还没有记录哦！");  
+		emptyView1.setVisibility(View.GONE);  
+		((ViewGroup)mToFuelRecList.getParent()).addView(emptyView1);  
+		mToFuelRecList.setEmptyView(emptyView1); 
 		
 		LayoutInflater inflater = LayoutInflater.from(this);
 		mTitlePort = inflater.inflate(R.layout.tofue_table_title_port, mToFuelRecList, false);
@@ -256,16 +285,12 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 			return;    	
     	registerForContextMenu(mToFuelRecList);
 				
-		//初始化车辆列表
-		//mCarArray = mCars.values().toArray(new Car[mCars.size()]);		
-		ArrayAdapter<Car> adapterCar = new ArrayAdapter<Car>(this,android.R.layout.simple_spinner_item,
-				MainActivity.mCars.values().toArray(new Car[MainActivity.mCars.size()]));
-		mCarNumber.setAdapter(adapterCar);
+		updateCars();
 		Calendar calendar = Calendar.getInstance();
 		Date curDate = new Date();
 		calendar.setTimeInMillis(curDate.getTime());
 		int curYear = calendar.get(Calendar.YEAR);
-		if(adapterCar.getCount() == 0){
+		if(adapterCar == null || adapterCar.getCount() == 0){
 			mStartYear = curYear;
 			mEndYear = curYear;
 			mYear = curYear;
@@ -292,10 +317,10 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 				}
 				else {
 					calendar.setTimeInMillis(y1);
-				mEndYear = calendar.get(Calendar.YEAR);
-				calendar.setTimeInMillis(y2);
-				mStartYear = calendar.get(Calendar.YEAR);
-				mYear = mEndYear;
+					mEndYear = calendar.get(Calendar.YEAR);
+					calendar.setTimeInMillis(y2);
+					mStartYear = calendar.get(Calendar.YEAR);
+					mYear = mEndYear;
 				}								
 			}
 		}
@@ -318,7 +343,7 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 		int[] toViews = getToViews();
 		adapterRec = new SimpleCursorAdapter(this, R.layout.tofuelrec_listitem, null, fromFields, toViews, 0);
 		adapterRec.setViewBinder(this);
-		mToFuelRecList.setAdapter(adapterRec);
+		mToFuelRecList.setAdapter(adapterRec);		
 		if(mCar != null)
 			getLoaderManager().initLoader(0, null, this);		
 		registerContentObservers(true);
@@ -363,21 +388,18 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 	    }
 	}
 	
+	/** 选择某个年份或某辆车，则装载该年份该车辆的加油记录 */
 	public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-        // An item was selected. You can retrieve the selected item using
-        // parent.getItemAtPosition(pos)
-//		if(parent == mCarNumber){
-//			Car car = mCarArray[pos];
-//			if(!readToFuelRecordsForCar(car.ID()))
-//				return;
-//			adapterRec.notifyDataSetChanged();
-//			//显示加油记录内容......
-//		}
 		if(parent == mCarNumber)
 			mCar = (Car)parent.getItemAtPosition(pos);
 		if(parent == mYearSpin)
 			mYear = Integer.parseInt(mSpanYear[pos]);
-		getLoaderManager().restartLoader(0, null, this);
+		if(initStage == INIT_STAGE_ONE)
+			initStage = INIT_STAGE_TWO;
+		else if(initStage == INIT_STAGE_TWO)
+			initStage = INIT_STAGE_THREE;	
+		if(initStage == INIT_STAGE_THREE)
+			getLoaderManager().restartLoader(0, null, this);
     }
 
     public void onNothingSelected(AdapterView<?> parent) {
@@ -392,12 +414,15 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 	
 	@Override
 	protected void onActivityResult (int requestCode, int resultCode, Intent data){
-		int i = 0;
-		if(requestCode == REQUEST_CODE_EDIT && resultCode == RESULT_OK){			
-			i = 0;				
+		int year;
+		if(requestCode == REQUEST_CODE_EDIT && resultCode == RESULT_OK){	
+			year = data.getIntExtra(TF_BUNDLE_KEY_YEAR, 0);
+			updateYearRange(year);				
 		}
 		else if(requestCode == REQUEST_CODE_NEW && resultCode == RESULT_OK){
-			i--;
+			int rowId = data.getIntExtra(TF_BUNDLE_KEY_ROWID, 0);
+			year = data.getIntExtra(TF_BUNDLE_KEY_YEAR, 0);
+			updateYearRange(year);		
 		}
 	}
 	
@@ -458,7 +483,8 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 			break;
 		case 3:		//油品种类
 			int fuelId = cursor.getInt(columnIndex);
-			v.setText(MainActivity.mFuels.get(fuelId).toString());
+			if(fuelId != 0)
+				v.setText(MainActivity.mFuels.get(fuelId).toString());
 			break;
 		case 4:		//里程表读数
 			double mileage = cursor.getDouble(columnIndex);
@@ -473,7 +499,8 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 			break;
 		case 9:		//加油站
 			int stationId = cursor.getInt(columnIndex);
-			v.setText(mStations.get(stationId).name());
+			if(stationId != 0)
+				v.setText(mStations.get(stationId).name());
 			break;
 		}
 		return true;
@@ -559,7 +586,17 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 			intent.putExtra(TF_BUNDLE_KEY_ROWID, 0);
 			intent.putExtra(TF_BUNDLE_KEY_EDITMODE, true);
 			intent.putExtra(TF_BUNDLE_KEY_DEF_CAR, mCar.ID());
-			intent.putExtra(TF_BUNDLE_KEY_DEF_STATION, mStations.get(1).ID());
+			if(adapterRec.getCount() != 0){
+				Cursor cursor = adapterRec.getCursor();
+				cursor.moveToFirst();
+				long defTime = cursor.getLong(cursor.getColumnIndex(ToFuelRecords.DATE));
+				intent.putExtra(TF_BUNDLE_KEY_DEF_DATE, defTime);
+			}			
+			if(!mStations.isEmpty()){
+				FuelStation defStation = mStations.values().iterator().next();
+				intent.putExtra(TF_BUNDLE_KEY_DEF_STATION, defStation.ID());
+			}
+				
 			startActivityForResult(intent, REQUEST_CODE_NEW);
 		}		
 	}
@@ -581,6 +618,8 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 		//单击加油记录，显示详情
+		if(id == -1 && position == 0)	//单击的是表的标题
+			return;
 		viewToFuelRecord(id);
 	}
 
@@ -588,6 +627,8 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 	@Override
 	public Loader onCreateLoader(int id, Bundle args) {
 		//利用光标装载器来实现加油记录的后台装载
+		if(mCar == null)
+			return null;
 		String uriStr = ToFuelRecords.CONTENT_URI_CAR_YEARS.toString();
 		uriStr = uriStr + "/" + Integer.toString(mCar.ID()) + "/" + Integer.toString(mYear);
 		Uri uri = Uri.parse(uriStr);
@@ -603,9 +644,44 @@ SimpleCursorAdapter.ViewBinder, AdapterView.OnItemClickListener, LoaderManager.L
 	public void onLoaderReset(Loader loader) {
 		adapterRec.swapCursor(null);		
 	}
+	
+	/** 更新车辆 */
+	private void updateCars(){
+		mCars = null;
+		adapterCar = null;		
+		int carNums = MainActivity.mCars.size();
+		if(carNums > 0){
+			mCars = new Car[carNums];
+			MainActivity.mCars.values().toArray(mCars);			
+		}	
+		else
+			mCars = new Car[]{};
+		adapterCar = new ArrayAdapter<Car>(this,android.R.layout.simple_spinner_item, mCars);
+		mCarNumber.setAdapter(adapterCar);
+	}
 		
-	
-	
+	/** 更新可选的年份范围 */
+	private void updateYearRange(int newYear){
+		boolean req = false;
+		if(newYear < mStartYear){
+			mStartYear = newYear;
+			req = true;
+		}
+		else if(newYear > mEndYear){
+			mEndYear = newYear;
+			req = true;
+		}
+		if(req){
+			mSpanYear = null;
+			int count = mEndYear - mStartYear -1;
+			mSpanYear = new String[count];
+			int year = mEndYear;
+			for(int i=0;i<count;i++,year--)
+				mSpanYear[i] = Integer.toString(year);
+			ArrayAdapter<String> adapterYear = new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item,mSpanYear);
+			mYearSpin.setAdapter(adapterYear);
+		}
+	}
 	
 //	public class ToFuelRecordsAdapter extends BaseAdapter {
 //

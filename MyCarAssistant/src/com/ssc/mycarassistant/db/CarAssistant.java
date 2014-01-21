@@ -33,6 +33,8 @@ public final class CarAssistant {
 	      public static final Uri CONTENT_URI_CARS = Uri.parse( "content://" + CarAssistant.AUTHORITY + "/" + ToFuelRecords.TABLE + "/CARS/");
 	      /** 访问指定车辆的指定年份所有加油记录的内容uri */
 	      public static final Uri CONTENT_URI_CAR_YEARS = Uri.parse( "content://" + CarAssistant.AUTHORITY + "/" + ToFuelRecords.TABLE + "/CAR_YEARS/");
+	      /**  */
+	      public static final Uri CONTENT_URI_CAR_INITITEM_URI = Uri.parse( "content://" + CarAssistant.AUTHORITY + "/" + ToFuelRecords.TABLE + "/CAR_INITITEM/");
 	      public static final String DEFAULT_SORT_ORDER = ToFuelRecords.DATE /*+ " DESC"*/;	//默认以时间顺序返回加油记录结果
 	      
 	      public static final String TABLE = "ToFuelRecords";

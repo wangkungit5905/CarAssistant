@@ -38,6 +38,7 @@ public class CarAssistantProvider extends ContentProvider {
 	private static final int TOFUEL_ITEM = 10;			//单条加油记录
 	private static final int TOFUEL_CARS = 11;			//针对某辆车的所有加油记录
 	private static final int TOFUEL_CARS_YEAR = 12;		//针对某辆车某年的所有加油记录
+	private static final int TOFUEL_CAR_INITITEM = 13;	//加油记录初始条目
 	
 	private static final UriMatcher mUriMatcher;
 	private DbHelper mDbHelper;
@@ -56,6 +57,7 @@ public class CarAssistantProvider extends ContentProvider {
 		mUriMatcher.addURI(CarAssistant.AUTHORITY, ToFuelRecords.TABLE+"/#", TOFUEL_ITEM);
 		mUriMatcher.addURI(CarAssistant.AUTHORITY, ToFuelRecords.TABLE+"/CARS/#", TOFUEL_CARS);
 		mUriMatcher.addURI(CarAssistant.AUTHORITY, ToFuelRecords.TABLE+"/CAR_YEARS/#/#", TOFUEL_CARS_YEAR);
+		mUriMatcher.addURI(CarAssistant.AUTHORITY, ToFuelRecords.TABLE+"/CAR_INITITEM/#", TOFUEL_CAR_INITITEM);
 	}
 	
 	public CarAssistantProvider() {
@@ -189,19 +191,19 @@ public class CarAssistantProvider extends ContentProvider {
 			case TOFUEL_CARS:
 				isToFuelRecs = true;
 				tableName = ToFuelRecords.TABLE;
-				innerSelection = ToFuelRecords.VEHICLE + " = ? ";
+				innerSelection = ToFuelRecords.VEHICLE + " = ? and " + ToFuelRecords.MONEY + " != 0";
 				innerSelectionArgs = new String[]{pathSegments.get(2)};
 				break;
 			case TOFUEL_CARS_YEAR:
 				isToFuelRecs = true;
 				tableName = ToFuelRecords.TABLE;
-				innerSelection = ToFuelRecords.VEHICLE + " = ? and (" + ToFuelRecords.DATE + " >= ? and " + ToFuelRecords.DATE + 
-						" <= ?)";
+				innerSelection = ToFuelRecords.VEHICLE + " = ? and "+ ToFuelRecords.MONEY + " != 0" + " and (" + 
+						ToFuelRecords.DATE + " >= ? and " + ToFuelRecords.DATE + " <= ?)";
 				Calendar calendar = Calendar.getInstance();
 				int year = Integer.parseInt(pathSegments.get(3));
-				calendar.set(year, 1,1);
+				calendar.set(year, 0,1);
 				long st = calendar.getTime().getTime();
-				calendar.set(year,12,31,23,59);
+				calendar.set(year,11,31,23,59);
 				long et = calendar.getTime().getTime();
 				innerSelectionArgs = new String[]{pathSegments.get(2),Long.toString(st),Long.toString(et)};
 				break;
@@ -252,6 +254,10 @@ public class CarAssistantProvider extends ContentProvider {
 		case TOFUEL_ITEM:
 			id = (int)ContentUris.parseId(uri);
 			updates = mDbHelper.updateToFuelRecord(id, values);
+			break;
+		case TOFUEL_CAR_INITITEM:
+			id = (int)ContentUris.parseId(uri);
+			updates = mDbHelper.updateInitRecord(id, values);
 			break;
 		case STATION_ITEM:
 			id = (int)ContentUris.parseId(uri);

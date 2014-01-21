@@ -62,6 +62,7 @@ public class ManagerActivity extends Activity /*implements OnNavigationListener 
 		//if(isFuelMgr)
 		setContentView(R.layout.activity_manager);
 		
+		
 		final ActionBar bar = getActionBar();
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
         bar.setDisplayOptions(0, ActionBar.DISPLAY_SHOW_TITLE);

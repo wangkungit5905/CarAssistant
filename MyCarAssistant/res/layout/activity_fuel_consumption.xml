@@ -8,7 +8,7 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context=".ToFuelMgr" >
+    tools:context=".FuelConsumption" >
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -17,28 +17,41 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="车牌" />
+            android:text="@string/txt_com_cars" />
         <Spinner
-            android:id="@+id/carNumbers"
+            android:id="@+id/stat_spin_cars"
             android:layout_width="130dp"
             android:layout_height="wrap_content"/>
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="年份" />
+            android:text="@string/txt_com_stat_range" />
         <Spinner
-            android:id="@+id/toFuel_years"
+            android:id="@+id/stat_spin_range"
             android:layout_width="100dp"
-            android:layout_height="wrap_content"/>        
-       
-    </LinearLayout>  
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
     
-    <ListView
-        android:id="@+id/toFuelRecords"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content" >
-    </ListView>
-    
-    
+        
+         <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/txt_com_stat_total_money" />
+         <TextView
+            android:id="@+id/stat_total_money"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+         
+    </LinearLayout>
+
+    <view
+        android:id="@+id/stat_chartView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        class="com.ssc.widgets.chart.ChartView" />
 
 </LinearLayout>

@@ -62,10 +62,12 @@ StationChoiceFragment.OnSelectStationListener{
 	private long mRowId;
 	private boolean editMode;
 	private long mDate,mDateOld;
+	private int mYear;
 	private int mStationId,mFuelId,mStationIdOld,mFuelIdOld,mMileage;
 	private float mMoney,mFuelDial,mFuelAmount,mPrice;
 	private Car mDefCar;
 	private FuelStation mDefStation;
+	private long mDefDate;
 	//private Intent mResultIntent;	//记录编辑的状态（加油记录的哪些部分被修改了）
 	private FieldAutoCal mAutoCalListener;	//
 	
@@ -228,8 +230,12 @@ StationChoiceFragment.OnSelectStationListener{
 		if(mRowId == 0){
 			int id = intent.getIntExtra(ToFuelMgr.TF_BUNDLE_KEY_DEF_CAR, 1);
 			mDefCar = MainActivity.mCars.get(id);
-			id = intent.getIntExtra(ToFuelMgr.TF_BUNDLE_KEY_DEF_STATION, 1);
-			mDefStation = ToFuelMgr.mStations.get(id);
+			id = intent.getIntExtra(ToFuelMgr.TF_BUNDLE_KEY_DEF_STATION, 0);
+			if(id == 0)
+				mDefStation = null;
+			else
+				mDefStation = ToFuelMgr.mStations.get(id);
+			mDefDate = intent.getLongExtra(ToFuelMgr.TF_BUNDLE_KEY_DEF_DATE, 0);
 		}
 		editMode = intent.getBooleanExtra(ToFuelMgr.TF_BUNDLE_KEY_EDITMODE, false);
 		setContentView(R.layout.tofuel_editor);
@@ -272,7 +278,10 @@ StationChoiceFragment.OnSelectStationListener{
 						@Override
 						public void onClick(View v) {
 							if(saveRecord()){
-								setResult(RESULT_OK);
+								Intent resultIntent = new Intent();
+								resultIntent.putExtra(ToFuelMgr.TF_BUNDLE_KEY_YEAR, mYear);
+								resultIntent.putExtra(ToFuelMgr.TF_BUNDLE_KEY_ROWID, mRowId);
+								setResult(RESULT_OK, resultIntent);
 								finish();
 							}							
 						}
@@ -320,7 +329,12 @@ StationChoiceFragment.OnSelectStationListener{
 	/** 读取单个加油记录 */
 	private boolean readToFuelRec(){
 		if(mRowId == 0){
-			mDate = Calendar.getInstance().getTimeInMillis();	//默认当前日期
+			//
+			if(mDefDate == 0)
+				mDate = Calendar.getInstance().getTimeInMillis();	//默认当前日期
+			else 
+				mDate = mDefDate;			
+			mYear = Calendar.getInstance().get(Calendar.YEAR);
 			mMoney = 0;
 			mPrice = 0;
 			mFuelAmount = 0;
@@ -339,6 +353,9 @@ StationChoiceFragment.OnSelectStationListener{
     		return false;
     	cursor.moveToFirst();
 		mDate = cursor.getLong(cursor.getColumnIndex(ToFuelRecords.DATE));
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTimeInMillis(mDate);
+		mYear = calendar.get(Calendar.YEAR);
 		mDateOld = mDate;
 		mMoney = cursor.getFloat(cursor.getColumnIndex(ToFuelRecords.MONEY));
 		mMileage = cursor.getInt(cursor.getColumnIndex(ToFuelRecords.MILEAGE));
@@ -471,6 +488,7 @@ StationChoiceFragment.OnSelectStationListener{
 
 	@Override
 	public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {		
+		mYear = year;
 		Calendar calendar = Calendar.getInstance();
 		calendar.set(year, monthOfYear, dayOfMonth);
 		mDate = calendar.getTimeInMillis();

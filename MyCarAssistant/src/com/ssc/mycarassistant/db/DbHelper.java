@@ -118,6 +118,15 @@ public class DbHelper extends SQLiteOpenHelper {
 	    return updates;
 	}
 	
+	/** 更新车辆的初始里程、油量、开始使用日期等信息 */
+	public int updateInitRecord(int carId, ContentValues values){
+		String where = ToFuelRecords.VEHICLE + " = ? and " + ToFuelRecords.MONEY + " = 0";
+		String[] args = new String[]{Integer.toString(carId)};
+		SQLiteDatabase mDb = getWritableDatabase();
+		int updates = mDb.update(ToFuelRecords.TABLE, values, where, args);
+		return updates;
+	}
+	
 	/** 插入一条新的加油记录 */
 	public long insertToFuelRecord(ContentValues values){
 		SQLiteDatabase db = getWritableDatabase();
